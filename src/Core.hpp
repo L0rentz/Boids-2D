@@ -4,6 +4,7 @@
 #include "Boid.hpp"
 
 #include <SFML/Graphics.hpp>
+#include <time.h>
 
 class Core {
     public:
@@ -17,10 +18,16 @@ class Core {
         void events();
         void display();
         void update();
+        void generateBorders();
+        void drawObstacles();
+        void createObstacleOnClick();
 
         sf::RenderWindow _window;
         sf::Event _event;
         std::vector<Boid *> _boids;
+        std::vector<sf::FloatRect *> _obstacles;
+        sf::FloatRect *_placeHolder;
+        bool _leftMouseClick;
 };
 
 #endif /* !CORE_HPP_ */

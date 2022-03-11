@@ -11,7 +11,8 @@ LDFLAGS			=	-lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lGL
 
 SRC				=	main.cpp \
 					src/Core.cpp \
-					src/Boid.cpp
+					src/Boid.cpp \
+					src/Utils.cpp
 
 OBJ				=	$(SRC:.cpp=.o)
 
