@@ -96,7 +96,7 @@ void Core::update()
     if (_leftMouseClick) {
         _placeHolder->width = static_cast<float>(sf::Mouse::getPosition(_window).x) - _placeHolder->left;
         _placeHolder->height = static_cast<float>(sf::Mouse::getPosition(_window).y) - _placeHolder->top;
-        if (_placeHolder->width > _placeHolder->height) _placeHolder->height = 1.0;
+        if (std::abs(_placeHolder->width) > std::abs(_placeHolder->height)) _placeHolder->height = 1.0;
         else _placeHolder->width = 1.0;
     }
 }
