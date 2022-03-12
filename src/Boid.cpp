@@ -2,12 +2,12 @@
 
 static int id = 0;
 
-Boid::Boid(const sf::Vector2f position, const unsigned int size, const int speed, const unsigned int rotationSpeed)
+Boid::Boid(const sf::Vector2f position, const float gridSize, const unsigned int size, const int speed, const unsigned int rotationSpeed)
 {
     _id = id++;
-    _cohesionRange = 100.0;
-    _alignmentRange = 75.0;
-    _separationRange = 25.0;
+    _cohesionRange = 75.0;
+    _alignmentRange = 50.0;
+    _separationRange = 15.0;
     _maxRange = _cohesionRange > _alignmentRange ? _cohesionRange > _separationRange ? _cohesionRange : _separationRange : _alignmentRange > _separationRange ? _alignmentRange : _separationRange;
     _fov = 260;
     _rotationSpeed = rotationSpeed;
@@ -19,20 +19,38 @@ Boid::Boid(const sf::Vector2f position, const unsigned int size, const int speed
     _boid[1].position = {_center.position.x - _size, _center.position.y + _size * 2};
     _boid[2].position = {_center.position.x + _size, _center.position.y + _size * 2};
     _color = sf::Color(7, 87, 152, 255);
-    if (_id % 2 == 1) _color = sf::Color(121, 158, 196, 255);
+    _fleet = _id % 2;
+    if (_fleet == 1) _color = sf::Color(121, 158, 196, 255);
     setColor(_color);
     int randRotation = rand() % 360;
     for (int i = 0; i < 3; i++)
        _boid[i].position = utils.rotatePointAroundCenter(_boid[i].position, _center.position, randRotation);
+
+    _min = 0.0;
+    _max = gridSize;
+    _cellSize = gridSize / 10;
+    _width = (_max - _min) / _cellSize;
+    _buckets = std::pow(_width, 2);
+    updateGridID();
 }
 
 Boid::~Boid()
 {
 }
 
-void Boid::rotateBoidTowardPoint(const sf::Vector2f point, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront)
+void Boid::updateGridID()
 {
-    unsigned int mappedDegrees = utils.mappedDegreesAngleDif(point, mappedCenter, mappedFront);
+    _gridCell = std::floor(_center.position.x / _cellSize) + std::floor(_center.position.y / _cellSize) * _width;
+}
+
+int Boid::getGridID()
+{
+    return (_gridCell);
+}
+
+void Boid::rotateBoidTowardPoint(const sf::Vector2f point, const sf::Vector2f center, const sf::Vector2f front)
+{
+    unsigned int mappedDegrees = utils.mappedDegreesAngleDif(point, center, front);
     if (mappedDegrees > _rotationSpeed) {
         int rotationSpeed = _rotationSpeed;
         if (mappedDegrees > 180) rotationSpeed *= -1;
@@ -67,25 +85,19 @@ void Boid::setColor(const sf::Color color)
     _boid[2].color = color;
 }
 
-void Boid::findInRange(const std::vector<Boid *> &boids, const sf::RenderWindow &window, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront)
+void Boid::findInRange(const std::map<int, std::vector<Boid *>> &hashtable, const sf::RenderWindow &window, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront)
 {
     _inRange.clear();
     float magnitude = 0.0;
     unsigned int mappedDegrees = 0;
-    for (auto it : boids) {
+    auto hashIt = hashtable.find(getGridID());
+    for (auto it : hashIt->second) {
         if (it->_id == _id) continue;
         sf::Vector2f itMappedCenter = static_cast<sf::Vector2f>(window.mapCoordsToPixel(it->_center.position, window.getView()));
         magnitude = utils.magnitudeVector2f(itMappedCenter, mappedCenter);
-        if (magnitude > _maxRange) {
-            if (_id == 1) it->setColor(it->_color);
-            continue;
-        }
+        if (magnitude > _maxRange) continue;
         mappedDegrees = utils.mappedDegreesAngleDif(itMappedCenter, mappedCenter, mappedFront);
-        if (mappedDegrees > _fov / 2 && mappedDegrees < 360 - _fov / 2) {
-            if (_id == 1) it->setColor(it->_color);
-            continue;
-        }
-        if (_id == 1) it->setColor(sf::Color::Yellow);
+        if (mappedDegrees > _fov / 2 && mappedDegrees < 360 - _fov / 2) continue;
         _inRange.push_back(std::make_pair(it, std::make_pair(magnitude, mappedDegrees)));
     }
 }
@@ -224,17 +236,18 @@ void Boid::moveBoid(const sf::Vector2f windowSize)
     static_cast<void>(windowSize);
     // checkBorder(windowSize);
     translateBoid(sf::Vector2f{(directionNormalized.x * _speed), (directionNormalized.y * _speed)});
+    updateGridID();
 }
 
-void Boid::update(const sf::RenderWindow &window, const std::vector<Boid *> &boids, const std::vector<sf::FloatRect *> &obstacles)
+void Boid::update(const sf::RenderWindow &window, const std::map<int, std::vector<Boid *>> &hashtable, const std::vector<sf::FloatRect *> &obstacles)
 {
     sf::Vector2f mappedCenter = static_cast<sf::Vector2f>(window.mapCoordsToPixel(_center.position, window.getView()));
     sf::Vector2f mappedFront = static_cast<sf::Vector2f>(window.mapCoordsToPixel(_boid[0].position, window.getView()));
     sf::Vector2f windowSize = static_cast<sf::Vector2f>(window.mapPixelToCoords(static_cast<sf::Vector2i>(window.getSize()), window.getView()));
     bool check = false;
     check = wallAvoidance(window, obstacles, mappedCenter, mappedFront);
-    if (!check) {
-        findInRange(boids, window, mappedCenter, mappedFront);
+    if (!check && hashtable.size() > 0) {
+        findInRange(hashtable, window, mappedCenter, mappedFront);
         check = separation(window, mappedCenter, mappedFront);
         if (!check) check = alignment(window, mappedCenter, mappedFront);
         if (!check) cohesion(window, mappedCenter, mappedFront);

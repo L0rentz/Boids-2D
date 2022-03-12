@@ -5,6 +5,7 @@
 
 #include <SFML/Graphics.hpp>
 #include <time.h>
+#include <map>
 
 class Core {
     public:
@@ -27,6 +28,7 @@ class Core {
         std::vector<Boid *> _boids;
         std::vector<sf::FloatRect *> _obstacles;
         sf::FloatRect *_placeHolder;
+        std::map<int, std::vector<Boid *>> _hashTable;
         bool _leftMouseClick;
 };
 

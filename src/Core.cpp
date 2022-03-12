@@ -6,10 +6,10 @@ Core::Core(const std::string &title, unsigned int framerate)
     _window.create(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), title);
     _window.setFramerateLimit(framerate);
     generateBorders();
-    for (int i = 0; i < 300; i++) {
+    for (int i = 0; i < 2200; i++) {
         float x = WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2);
         float y = WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2);
-        _boids.push_back(new Boid(sf::Vector2f{x, y}, 7, 5, 5));
+        _boids.push_back(new Boid(sf::Vector2f{x, y}, _window.getSize().x, 4, 4, 4));
     }
     _placeHolder = nullptr;
     _leftMouseClick = false;
@@ -58,6 +58,14 @@ void Core::events()
         if (_event.type == sf::Event::MouseButtonReleased) {
             if (_event.mouseButton.button == sf::Mouse::Left) {
                 _leftMouseClick = false;
+                if (_placeHolder->height < 0) {
+                    _placeHolder->top -= std::abs(_placeHolder->height);
+                    _placeHolder->height *= -1;
+                }
+                else if (_placeHolder->width < 0) {
+                    _placeHolder->left -= std::abs(_placeHolder->width);
+                    _placeHolder->width *= -1;
+                }
                 _obstacles.push_back(_placeHolder);
                 _placeHolder = nullptr;
             }
@@ -91,8 +99,11 @@ void Core::display()
 
 void Core::update()
 {
+    _hashTable.clear();
     for (auto it : _boids)
-        it->update(_window, _boids, _obstacles);
+        _hashTable[it->getGridID()].push_back(it);
+    for (auto it : _boids)
+        it->update(_window, _hashTable, _obstacles);
     if (_leftMouseClick) {
         _placeHolder->width = static_cast<float>(sf::Mouse::getPosition(_window).x) - _placeHolder->left;
         _placeHolder->height = static_cast<float>(sf::Mouse::getPosition(_window).y) - _placeHolder->top;
