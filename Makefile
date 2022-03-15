@@ -1,30 +1,47 @@
-NAME			=	Boids
+# CPP COMPILATION
 
-CXX				=	g++
+CXXDIRECTORIES	=    src glad/include stb_image glm
+CXXINCLOOP		=    $(foreach d, $(CXXDIRECTORIES), -I$d)
 
-DIRECTORIES		=    ./src
-INCLOOP			=    $(foreach d, $(DIRECTORIES), -I$d)
+CXXFLAGS		=	-g3 -Wall -Wextra $(CXXINCLOOP) -O3
 
-CXXFLAGS		=	-g3 -Wall -Wextra $(INCLOOP)
-
-LDFLAGS			=	-lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lGL
-
-SRC				=	main.cpp \
+SRCCPP			=	main.cpp \
+					stb_image/stb_image.cpp \
 					src/Core.cpp \
 					src/Boid.cpp \
 					src/Utils.cpp
 
-OBJ				=	$(SRC:.cpp=.o)
+OBJCPP			=	$(SRCCPP:.cpp=.o)
+
+# C COMPILATION
+
+CDIRECTORIES	=    glad/include
+CINCLOOP		=    $(foreach d, $(CDIRECTORIES), -I$d) -O3
+
+CFLAGS			=	-g3 -Wall -Wextra $(CINCLOOP)
+
+SRCC			= 	glad/src/glad.c
+
+OBJC			=	$(SRCC:.c=.o)
+
+# COMMON
+
+NAME			=	Boids
+
+LDFLAGS			=	-ldl -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lGL
 
 RM				=	rm -rf
 
 all: $(NAME)
 
-$(NAME): $(OBJ)
-	$(CXX) -o $(NAME) $(OBJ) $(LDFLAGS)
+$(NAME): $(OBJCPP) $(OBJC)
+	g++ -o $(NAME) $(OBJCPP) $(OBJC) $(LDFLAGS)
+
+# $(NAME): $(OBJCPP)
+# 	g++ -o $(NAME) $(OBJCPP) $(LDFLAGS)
 
 clean:
-	$(RM) $(OBJ)
+	$(RM) $(OBJCPP) $(OBJC)
 
 fclean: clean
 	$(RM) $(NAME)

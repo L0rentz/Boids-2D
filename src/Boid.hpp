@@ -2,6 +2,10 @@
 #define BOID_HPP_
 
 #include "Utils.hpp"
+#include "glm.hpp"
+#include "gtc/matrix_transform.hpp"
+#include "gtc/type_ptr.hpp"
+#include "glad/glad.h"
 
 #include <SFML/Graphics.hpp>
 #include <iostream>
@@ -11,22 +15,32 @@
 
 class Boid {
     public:
-        Boid(const sf::Vector2f position, const float gridSize, const unsigned int size = 20, const int speed = 10, const unsigned int rotationSpeed = 5);
+        Boid(const glm::vec2 position, const float gridSize, const unsigned int size = 20, const int speed = 10, const unsigned int rotationSpeed = 5);
         ~Boid();
 
-        void draw(sf::RenderWindow &window);
-        void update(const sf::RenderWindow &window, const std::map<int, std::vector<Boid *>> &hashtable, const std::vector<sf::FloatRect *> &obstacles);
-        int getGridID();
+        void update(const sf::Vector2u windowSize, const std::map<int, std::vector<Boid *>> &hashtable, const std::vector<sf::FloatRect *> &obstacles);
+        int getGridID() const;
+        glm::mat4 getModelMatrix(const sf::RenderWindow &window) const;
+
+        static void prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO);
+        static void clearDrawingBuffers(unsigned int VAO);
 
     protected:
+        static const unsigned int vSize;
+        static float vertices[];
+        static int nextID;
+
     private:
         int _id;
+
         Utils utils;
+        glm::vec2 _debugPos;
 
-        sf::Vector2f _debugPos;
+        glm::mat4 _model;
+        glm::vec2 _front;
+        glm::vec2 _pos;
 
-        sf::Vertex _center;
-        sf::VertexArray _boid;
+        // Algo
         std::vector<std::pair<Boid *, std::pair<float, unsigned int>>> _inRange;
         unsigned int _size;
         unsigned int _rotationSpeed;
@@ -36,28 +50,28 @@ class Boid {
         float _alignmentRange;
         float _separationRange;
         float _maxRange;
-        sf::Color _color;
         int _fleet;
+        float _angleDeg;
 
+        // Spatial hashing
         int _gridCell;
         int _cellSize;
         int _width;
-        float _min;
-        float _max;
         int _buckets;
 
-        void setColor(const sf::Color color);
-        bool wallAvoidance(const sf::RenderWindow &window, const std::vector<sf::FloatRect *> &obstacles, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront);
-        void rotateBoidTowardPoint(const sf::Vector2f point, const sf::Vector2f center, const sf::Vector2f front);
-        void moveBoid(const sf::Vector2f windowSize);
-        void checkBorder(const sf::Vector2f windowSize);
-        void translateBoid(const sf::Vector2f translation);
-        bool separation(const sf::RenderWindow &window, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront);
-        bool cohesion(const sf::RenderWindow &window, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront);
-        bool alignment(const sf::RenderWindow &window, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront);
-        void findInRange(const std::map<int, std::vector<Boid *>> &hashtable, const sf::RenderWindow &window, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront);
-        bool processRotation(const sf::Vector2f point, const sf::Vector2f mappedCenter, const sf::Vector2f mappedFront);
+        bool wallAvoidance(sf::Vector2u windowSize, const std::vector<sf::FloatRect *> &obstacles);
+        void rotateBoidTowardPoint(const glm::vec2 point, const glm::vec2 center, const glm::vec2 front);
+        void updatePos(sf::Vector2u windowSize);
+        void checkBorder(sf::Vector2u windowSize);
+        void move(const glm::vec2 translation);
+        bool separation();
+        bool cohesion();
+        bool alignment();
+        void findInRange(const std::map<int, std::vector<Boid *>> &hashtable);
+        bool processRotation(const glm::vec2 point);
         void updateGridID();
+        void setVerticeModel(float x, float y, unsigned int i);
+        void setPosition(const glm::vec2 position);
 };
 
 #endif /* !BOID_HPP_ */

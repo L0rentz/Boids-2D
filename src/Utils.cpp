@@ -14,7 +14,7 @@ unsigned int Utils::mappedDegrees(float radians)
     return static_cast<int>(degrees + 360) % 360;
 }
 
-unsigned int Utils::mappedDegreesAngleDif(const sf::Vector2f a, const sf::Vector2f tail, const sf::Vector2f b)
+unsigned int Utils::mappedDegreesAngleDif(const glm::vec2 a, const glm::vec2 tail, const glm::vec2 b)
 {
     float anglePoint = angleBetweenVector2f(tail, a);
     float angleBoid = angleBetweenVector2f(tail, b);
@@ -25,22 +25,22 @@ unsigned int Utils::mappedDegreesAngleDif(const sf::Vector2f a, const sf::Vector
     return mappedDegrees;
 }
 
-float Utils::magnitudeVector2f(const sf::Vector2f a, const sf::Vector2f b)
+float Utils::magnitudeVector2f(const glm::vec2 a, const glm::vec2 b)
 {
     return std::sqrt(std::pow(b.x - a.x, 2) + std::pow(b.y - a.y, 2));
 }
 
-float Utils::dotProductVector2f(const sf::Vector2f a, const sf::Vector2f b)
+float Utils::dotProductVector2f(const glm::vec2 a, const glm::vec2 b)
 {
     return a.x * b.x + a.y * b.y;
 }
 
-float Utils::angleBetweenVector2f(const sf::Vector2f a, const sf::Vector2f b)
+float Utils::angleBetweenVector2f(const glm::vec2 a, const glm::vec2 b)
 {
     return atan2(a.y - b.y, a.x - b.x);
 }
 
-sf::Vector2f Utils::rotatePointAroundCenter(sf::Vector2f point, const sf::Vector2f center, const float degrees)
+glm::vec2 Utils::rotatePointAroundCenter(glm::vec2 point, const glm::vec2 center, const float degrees)
 {
     float angleRad = degrees * M_PI / 180;
 
@@ -59,11 +59,11 @@ sf::Vector2f Utils::rotatePointAroundCenter(sf::Vector2f point, const sf::Vector
     return point;
 }
 
-sf::Vector2f Utils::normalizeVector2f(sf::Vector2f a, sf::Vector2f b)
+glm::vec2 Utils::normalizeVector2f(const glm::vec2 a, const glm::vec2 b)
 {
     float magnitude = magnitudeVector2f(a, b);
-    sf::Vector2f direction = sf::Vector2f{a.x - b.x, a.y - b.y};
-    sf::Vector2f normalize = direction;
+    glm::vec2 direction = glm::vec2{a.x - b.x, a.y - b.y};
+    glm::vec2 normalize = direction;
 
     normalize.x /= magnitude;
     normalize.y /= magnitude;
@@ -71,7 +71,7 @@ sf::Vector2f Utils::normalizeVector2f(sf::Vector2f a, sf::Vector2f b)
     return (normalize);
 }
 
-void Utils::posDebug(const sf::Vector2f position, sf::RenderWindow &window)
+void Utils::posDebug(const glm::vec2 position, sf::RenderWindow &window)
 {
     sf::CircleShape dot;
     float radius = 5.0;
@@ -81,7 +81,7 @@ void Utils::posDebug(const sf::Vector2f position, sf::RenderWindow &window)
     window.draw(dot);
 }
 
-bool Utils::segmentIntersectsRectangle(const sf::FloatRect &rect, const sf::Vector2f &a_p1, const sf::Vector2f &a_p2)
+bool Utils::segmentIntersectsRectangle(const sf::FloatRect &rect, const glm::vec2 &a_p1, const glm::vec2 &a_p2)
 {
     // Find min and max X for the segment
     auto minX = std::min(a_p1.x, a_p2.x);

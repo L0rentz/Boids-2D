@@ -4,20 +4,24 @@
 #include <SFML/Graphics.hpp>
 #include <cmath>
 
+#include "glm.hpp"
+#include "gtc/matrix_transform.hpp"
+#include "gtc/type_ptr.hpp"
+
 class Utils {
     public:
         Utils();
         ~Utils();
 
-        float angleBetweenVector2f(const sf::Vector2f a, const sf::Vector2f b);
-        float magnitudeVector2f(const sf::Vector2f a, const sf::Vector2f b);
-        float dotProductVector2f(const sf::Vector2f a, const sf::Vector2f b);
-        sf::Vector2f rotatePointAroundCenter(sf::Vector2f point, const sf::Vector2f center, const float degrees);
-        sf::Vector2f normalizeVector2f(sf::Vector2f a, sf::Vector2f b);
-        void posDebug(const sf::Vector2f position, sf::RenderWindow &window);
-        unsigned int mappedDegreesAngleDif(const sf::Vector2f a, const sf::Vector2f tail, const sf::Vector2f b);
+        float angleBetweenVector2f(const glm::vec2 a, const glm::vec2 b);
+        float magnitudeVector2f(const glm::vec2 a, const glm::vec2 b);
+        float dotProductVector2f(const glm::vec2 a, const glm::vec2 b);
+        glm::vec2 rotatePointAroundCenter(glm::vec2 point, const glm::vec2 center, const float degrees);
+        glm::vec2 normalizeVector2f(const glm::vec2 a, const glm::vec2 b);
+        void posDebug(const glm::vec2 position, sf::RenderWindow &window);
+        unsigned int mappedDegreesAngleDif(const glm::vec2 a, const glm::vec2 tail, const glm::vec2 b);
         unsigned int mappedDegrees(float radians);
-        bool segmentIntersectsRectangle(const sf::FloatRect &rect, const sf::Vector2f &a_p1, const sf::Vector2f &a_p2);
+        bool segmentIntersectsRectangle(const sf::FloatRect &rect, const glm::vec2 &a_p1, const glm::vec2 &a_p2);
 
     protected:
     private:
