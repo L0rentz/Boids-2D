@@ -1,6 +1,12 @@
 # Boids
 
-Work only on linux, make to build then ./boids
+## Linux
+Use "make" in the terminal to build then execute ./boids
+
+## Windows
+TODO
+
+# Description
 
 Boids simulation with collision detection.
 

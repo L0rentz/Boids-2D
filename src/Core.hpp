@@ -17,6 +17,12 @@
 #include <fstream>
 #include <cstring>
 
+#ifdef _WIN32
+    #define SHADER_PATH "../src/"
+#else
+    #define SHADER_PATH "src/"
+#endif
+
 #define BOIDS_COUNT 500000
 
 class Core {

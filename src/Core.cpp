@@ -178,13 +178,13 @@ void Core::openGlInit()
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH);
 
-    const char *vertexShaderSource = getFileContent("src/boid.vs");
+    const char *vertexShaderSource = getFileContent(std::string(SHADER_PATH) + "boid.vs");
     _vertexShader = glCreateShader(GL_VERTEX_SHADER);
     glShaderSource(_vertexShader, 1, &vertexShaderSource, NULL);
     glCompileShader(_vertexShader);
     checkShaderCompileError(_vertexShader);
 
-    const char *fragmentShaderSource = getFileContent("src/boid.fs");
+    const char *fragmentShaderSource = getFileContent(std::string(SHADER_PATH) + "boid.fs");
     _fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
     glShaderSource(_fragmentShader, 1, &fragmentShaderSource, NULL);
     glCompileShader(_fragmentShader);
