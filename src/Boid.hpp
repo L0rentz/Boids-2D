@@ -15,15 +15,17 @@
 
 class Boid {
     public:
-        Boid(const glm::vec2 position, const float gridSize, const unsigned int size = 20, const int speed = 10, const unsigned int rotationSpeed = 5);
+        Boid(const glm::vec2 position, const float gridSize, const int scale = 20, const int speed = 10, const int rotationSpeed = 5);
         ~Boid();
 
         void update(const sf::Vector2u windowSize, const std::map<int, std::vector<Boid *>> &hashtable, const std::vector<sf::FloatRect *> &obstacles);
         int getGridID() const;
-        glm::mat4 getModelMatrix(const sf::RenderWindow &window) const;
+        const glm::vec2 &getWorldPosition() const;
+        const glm::vec2 &getScale() const;
+        float getAngleDeg() const;
 
-        static void prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO);
-        static void clearDrawingBuffers(unsigned int VAO);
+        static void prepareDrawingBuffers(const unsigned int VAO, const unsigned int VBO, const unsigned int instanceVBO);
+        static void clearDrawingBuffers(const unsigned int VAO);
 
     protected:
         static const unsigned int vSize;
@@ -38,12 +40,14 @@ class Boid {
 
         glm::mat4 _model;
         glm::vec2 _front;
-        glm::vec2 _pos;
+        glm::vec2 _center;
+        glm::vec2 _scale;
 
         // Algo
         std::vector<std::pair<Boid *, std::pair<float, unsigned int>>> _inRange;
-        unsigned int _size;
-        unsigned int _rotationSpeed;
+        int _diameter;
+        int _radius;
+        int _rotationSpeed;
         int _speed;
         unsigned int _fov;
         float _cohesionRange;

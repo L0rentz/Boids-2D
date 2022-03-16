@@ -1,5 +1,9 @@
 #include "Boid.hpp"
 
+
+// --------------- Static --------------- //
+
+
 int Boid::nextID = 0;
 
 const unsigned int Boid::vSize = 15;
@@ -11,7 +15,40 @@ float Boid::vertices[vSize] = {
     -1.0f, -1.0f,  1.0f, 1.0f, 1.0f
 };
 
-Boid::Boid(const glm::vec2 position, const float gridSize, const unsigned int size, const int speed, const unsigned int rotationSpeed)
+void Boid::prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO)
+{
+    std::size_t floatSize = sizeof(float);
+    std::size_t vec4Size = sizeof(glm::vec4);
+    glBindBuffer(GL_ARRAY_BUFFER, VBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(Boid::vertices), Boid::vertices, GL_STATIC_DRAW);
+    glBindVertexArray(VAO);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * floatSize, (void *)0);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * floatSize, (void *)(2 * floatSize));
+    glEnableVertexAttribArray(1);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vec4Size + floatSize, (void*)0);
+    glEnableVertexAttribArray(2);
+    glVertexAttribDivisor(2, 1);
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, vec4Size + floatSize, (void*)(4 * floatSize));
+    glEnableVertexAttribArray(3);
+    glVertexAttribDivisor(3, 1);
+}
+
+void Boid::clearDrawingBuffers(unsigned int VAO)
+{
+    glBindVertexArray(0);
+    glBindBuffer(GL_ARRAY_BUFFER, 0);
+    glDisableVertexArrayAttrib(VAO, 0);
+    glDisableVertexArrayAttrib(VAO, 1);
+    glDisableVertexArrayAttrib(VAO, 2);
+}
+
+
+// -------------------------------------- //
+
+
+Boid::Boid(const glm::vec2 position, const float gridSize, const int size, const int speed, const int rotationSpeed)
 {
     _id = nextID++;
     _fleet = _id % 2;
@@ -22,19 +59,21 @@ Boid::Boid(const glm::vec2 position, const float gridSize, const unsigned int si
     _fov = 260;
     _rotationSpeed = rotationSpeed;
     _speed = speed;
-    _size = size;
+    _radius = size;
+    _diameter = _radius * 2;
+    _scale = glm::vec2{_diameter, _diameter};
 
-    _pos = glm::vec3{position.x, position.y, 0.0f};
-    _front = glm::vec2{_pos.x, _pos.y - _size * 2};
+    _center = glm::vec3{position.x, position.y, 0.0f};
+    _front = glm::vec2{_center.x, _center.y - _diameter};
     if (_id == 0) {
-        setVerticeModel(_pos.x, _pos.y - _size * 2, 0);
-        setVerticeModel(_pos.x - _size, _pos.y + _size * 2, 5);
-        setVerticeModel(_pos.x + _size, _pos.y + _size * 2, 10);
+        setVerticeModel(_front.x, _front.y, 0);
+        setVerticeModel(_center.x - _radius, _center.y + _diameter, 5);
+        setVerticeModel(_center.x + _radius, _center.y + _diameter, 10);
     }
     _model = glm::mat4(1.0f);
 
     _angleDeg = rand() % 360;
-    _front = utils.rotatePointAroundCenter(_front, _pos, _angleDeg);
+    _front = utils.rotatePointAroundCenter(_front, _center, _angleDeg);
 
     float min = 0.0;
     float max = gridSize;
@@ -51,57 +90,31 @@ Boid::~Boid()
 void Boid::setVerticeModel(float x, float y, unsigned int i)
 {
     if (i >= vSize || i % 5 != 0) return;
-    x = _pos.x - x;
-    y = _pos.y - y;
+    x = _center.x - x;
+    y = _center.y - y;
     glm::vec2 normalized = glm::normalize((glm::vec2){x, y});
     vertices[i] = normalized.x;
     vertices[i + 1] = normalized.y;
 }
 
-glm::mat4 Boid::getModelMatrix(const sf::RenderWindow &window) const
+const glm::vec2 &Boid::getWorldPosition() const
 {
-    sf::Vector2f worldPos = window.mapPixelToCoords(sf::Vector2i{(int)_pos.x, (int)_pos.y});
-    glm::mat4 model = glm::mat4(1.0f);
-    model = glm::translate(model, glm::vec3(worldPos.x, worldPos.y, 0.0f));
-
-    model = glm::translate(model, glm::vec3(0.5f * _size, 0.5f * _size, 0.0f));
-    model = glm::rotate(model, glm::radians(_angleDeg), glm::vec3(0.0f, 0.0f, 1.0f));
-    model = glm::translate(model, glm::vec3(-0.5f * _size, -0.5f * _size, 0.0f));
-
-    model = glm::scale(model, glm::vec3((float)_size * 2, (float)_size * 2, 1.0f));
-    return model;
+    return _center;
 }
 
-void Boid::prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO)
+const glm::vec2 &Boid::getScale() const
 {
-    glBindVertexArray(VAO);
-    glBindBuffer(GL_ARRAY_BUFFER, VBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(Boid::vertices), Boid::vertices, GL_STATIC_DRAW);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)0);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void *)(2 * sizeof(float)));
-    glEnableVertexAttribArray(1);
-    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    std::size_t vec4Size = sizeof(glm::vec4);
-    for (int i = 0; i < 4; i++) {
-        glVertexAttribPointer(2 + i, 4, GL_FLOAT, GL_FALSE, 4 * vec4Size, (void*)(vec4Size * i));
-        glEnableVertexAttribArray(2 + i);
-        glVertexAttribDivisor(2 + i, 1);
-    }
+    return _scale;
 }
 
-void Boid::clearDrawingBuffers(unsigned int VAO)
+float Boid::getAngleDeg() const
 {
-    glBindVertexArray(0);
-    glBindBuffer(GL_ARRAY_BUFFER, 0);
-    glDisableVertexArrayAttrib(VAO, 0);
-    glDisableVertexArrayAttrib(VAO, 1);
-    glDisableVertexArrayAttrib(VAO, 2);
+    return _angleDeg;
 }
 
 void Boid::updateGridID()
 {
-    _gridCell = std::floor(_pos.x / _cellSize) + std::floor(_pos.y / _cellSize) * _width;
+    _gridCell = std::floor(_center.x / _cellSize) + std::floor(_center.y / _cellSize) * _width;
 }
 
 int Boid::getGridID() const
@@ -111,41 +124,40 @@ int Boid::getGridID() const
 
 void Boid::rotateBoidTowardPoint(const glm::vec2 point, const glm::vec2 center, const glm::vec2 front)
 {
-    unsigned int mappedDegrees = utils.mappedDegreesAngleDif(point, center, front);
+    int mappedDegrees = utils.mappedDegreesAngleDif(point, center, front);
     if (mappedDegrees > _rotationSpeed) {
-        int rotationSpeed = _rotationSpeed;
-        if (mappedDegrees > 180) rotationSpeed *= -1;
-        _front = utils.rotatePointAroundCenter(_front, _pos, rotationSpeed);
-        _angleDeg += rotationSpeed;
+        int tmpRotationSpeed = _rotationSpeed;
+        if (mappedDegrees > 180) tmpRotationSpeed *= -1;
+        _front = utils.rotatePointAroundCenter(_front, _center, tmpRotationSpeed);
+        _angleDeg += tmpRotationSpeed;
     }
 }
 
 void Boid::move(const glm::vec2 translation)
 {
-    _pos.x += translation.x;
-    _pos.y += translation.y;
-    _pos = glm::vec3{_pos.x, _pos.y, 0.0f};
+    _center.x += translation.x;
+    _center.y += translation.y;
+    _center = glm::vec3{_center.x, _center.y, 0.0f};
     _front.x += translation.x;
     _front.y += translation.y;
 }
 
 void Boid::setPosition(const glm::vec2 position)
 {
-    _front.x -= _pos.x;
-    _front.y -= _pos.y;
-    _pos.x = position.x;
-    _pos.y = position.y;
-    _front += _pos.x;
-    _front += _pos.y;
+    _front.x -= _center.x;
+    _front.y -= _center.y;
+    _center.x = position.x;
+    _center.y = position.y;
+    _front += _center.x;
+    _front += _center.y;
 }
 
 void Boid::checkBorder(const sf::Vector2u windowSize)
 {
-    int halfLengthBoid = _size * 2;
-    if (_pos.x > windowSize.x + halfLengthBoid) setPosition(glm::vec2{-halfLengthBoid, _pos.y});
-    else if (_pos.x < 0 - halfLengthBoid) setPosition(glm::vec2{windowSize.x + halfLengthBoid, _pos.y});
-    else if (_pos.y > windowSize.y + halfLengthBoid) setPosition(glm::vec2{_pos.x, -halfLengthBoid});
-    else if (_pos.y < 0 - halfLengthBoid) setPosition(glm::vec2{_pos.x, windowSize.y + halfLengthBoid});
+    if (_center.x > windowSize.x + _diameter) setPosition(glm::vec2{-_diameter, _center.y});
+    else if (_center.x < 0 - _diameter) setPosition(glm::vec2{windowSize.x + _diameter, _center.y});
+    else if (_center.y > windowSize.y + _diameter) setPosition(glm::vec2{_center.x, -_diameter});
+    else if (_center.y < 0 - _diameter) setPosition(glm::vec2{_center.x, windowSize.y + _diameter});
 }
 
 void Boid::findInRange(const std::map<int, std::vector<Boid *>> &hashtable)
@@ -156,9 +168,9 @@ void Boid::findInRange(const std::map<int, std::vector<Boid *>> &hashtable)
     auto hashIt = hashtable.find(getGridID());
     for (auto it : hashIt->second) {
         if (it->_id == _id) continue;
-        magnitude = utils.magnitudeVector2f(it->_pos, _pos);
+        magnitude = utils.magnitudeVector2f(it->_center, _center);
         if (magnitude > _maxRange) continue;
-        mappedDegrees = utils.mappedDegreesAngleDif(it->_pos, _pos, _front);
+        mappedDegrees = utils.mappedDegreesAngleDif(it->_center, _center, _front);
         if (mappedDegrees > _fov / 2 && mappedDegrees < 360 - _fov / 2) continue;
         _inRange.push_back(std::make_pair(it, std::make_pair(magnitude, mappedDegrees)));
     }
@@ -166,20 +178,20 @@ void Boid::findInRange(const std::map<int, std::vector<Boid *>> &hashtable)
 
 bool Boid::processRotation(const glm::vec2 point)
 {
-    glm::vec2 normalizedDirection = utils.normalizeVector2f(_pos, point);
-    glm::vec2 normalizedBoidDirection = utils.normalizeVector2f(_pos, _front);
+    glm::vec2 normalizedDirection = utils.normalizeVector2f(_center, point);
+    glm::vec2 normalizedBoidDirection = utils.normalizeVector2f(_center, _front);
     float angleDirection = std::atan2(normalizedDirection.x, normalizedDirection.y);
     float angleBoid = std::atan2(normalizedBoidDirection.x, normalizedBoidDirection.y);
     unsigned int mappedDirectionDegrees = utils.mappedDegrees(angleDirection);
     unsigned int mappedBoidDegrees = utils.mappedDegrees(angleBoid);
     int degreesDif = mappedDirectionDegrees - mappedBoidDegrees;
     if (std::abs(degreesDif) <= _rotationSpeed) return false;
-    int rotationSpeed = _rotationSpeed;
-    rotationSpeed *= -1;
-    if (mappedDirectionDegrees < mappedBoidDegrees && mappedBoidDegrees - mappedDirectionDegrees <= 180) rotationSpeed *= -1;
-    if (mappedDirectionDegrees > mappedBoidDegrees && mappedDirectionDegrees- mappedBoidDegrees > 180) rotationSpeed *= -1;
-    _front = utils.rotatePointAroundCenter(_front, _pos, rotationSpeed);
-    _angleDeg += rotationSpeed;
+    int tmpRotationSpeed = _rotationSpeed;
+    tmpRotationSpeed *= -1;
+    if (mappedDirectionDegrees < mappedBoidDegrees && mappedBoidDegrees - mappedDirectionDegrees <= 180) tmpRotationSpeed *= -1;
+    if (mappedDirectionDegrees > mappedBoidDegrees && mappedDirectionDegrees- mappedBoidDegrees > 180) tmpRotationSpeed *= -1;
+    _front = utils.rotatePointAroundCenter(_front, _center, tmpRotationSpeed);
+    _angleDeg += tmpRotationSpeed;
     return true;
 }
 
@@ -192,12 +204,12 @@ bool Boid::separation()
         for (auto it : _inRange) {
             if (it.second.first > _separationRange) continue;
             count++;
-            total.x += it.first->_pos.x;
-            total.y += it.first->_pos.y;
+            total.x += it.first->_center.x;
+            total.y += it.first->_center.y;
         }
         if (count == 0) return false;
-        center.x = (total.x / count - _pos.x) * -1 + _pos.x;
-        center.y = (total.y / count - _pos.y) * -1 + _pos.y;
+        center.x = (total.x / count - _center.x) * -1 + _center.x;
+        center.y = (total.y / count - _center.y) * -1 + _center.y;
     } else return false;
     //_debugPos = center;
     return processRotation(center);
@@ -212,8 +224,8 @@ bool Boid::cohesion()
         for (auto it : _inRange) {
             if (it.second.first > _cohesionRange) continue;
             count++;
-            total.x += it.first->_pos.x;
-            total.y += it.first->_pos.y;
+            total.x += it.first->_center.x;
+            total.y += it.first->_center.y;
         }
         if (count == 0) return false;
         center.x = total.x / count;
@@ -233,13 +245,13 @@ bool Boid::alignment()
         for (auto it : _inRange) {
             if (it.second.first > _alignmentRange) continue;
             count++;
-            itNormalizedVelocity = utils.normalizeVector2f(it.first->_pos, it.first->_front);
+            itNormalizedVelocity = utils.normalizeVector2f(it.first->_center, it.first->_front);
             total.x += itNormalizedVelocity.x;
             total.y += itNormalizedVelocity.y;
         }
         if (count == 0) return false;
-        center.x = (total.x / count) * -1 * _speed + _pos.x;
-        center.y = (total.y / count) * -1 * _speed + _pos.y;
+        center.x = (total.x / count) * -1 * _speed + _center.x;
+        center.y = (total.y / count) * -1 * _speed + _center.y;
     } else return false;
     //_debugPos = center;
     return processRotation(center);
@@ -251,40 +263,39 @@ bool Boid::wallAvoidance(sf::Vector2u windowSize, const std::vector<sf::FloatRec
 
     // Check if outside
     sf::FloatRect wallRect = {WALLOFFSET, WALLOFFSET, static_cast<float>(windowSize.x - WALLOFFSET * 2), static_cast<float>(windowSize.y - WALLOFFSET * 2)};
-    if (!wallRect.contains(_pos.x, _pos.y)) {
+    if (!wallRect.contains(_center.x, _center.y)) {
         glm::vec2 mapCenter = glm::vec2{static_cast<float>(windowSize.x / 2), static_cast<float>(windowSize.y / 2)};
         return processRotation(mapCenter);
     }
 
     // Check if wall
-    normalizedDirection = utils.normalizeVector2f(_front, _pos);
+    normalizedDirection = utils.normalizeVector2f(_front, _center);
     glm::vec2 frontRaycast = glm::vec2{_front.x + normalizedDirection.x * 200, _front.y + normalizedDirection.y * 200};
     // _debugPos = frontRaycast;
     int isColliding = 0;
     for (auto it : obstacles)
-        isColliding += utils.segmentIntersectsRectangle(*it, _pos, frontRaycast);
+        isColliding += utils.segmentIntersectsRectangle(*it, _center, frontRaycast);
     if (isColliding == 0) return false;
     glm::vec2 leftRaycast = frontRaycast;
     glm::vec2 rightRaycast = frontRaycast;
     for (int raycastAngle = 10; isColliding > 0 && raycastAngle <= 180; raycastAngle += 10) {
         isColliding = 0;
-        leftRaycast = utils.rotatePointAroundCenter(leftRaycast, _pos, raycastAngle);
+        leftRaycast = utils.rotatePointAroundCenter(leftRaycast, _center, raycastAngle);
         for (auto it : obstacles)
-            isColliding += utils.segmentIntersectsRectangle(*it, _pos, leftRaycast);
+            isColliding += utils.segmentIntersectsRectangle(*it, _center, leftRaycast);
         if (isColliding == 0) {
-            _front = utils.rotatePointAroundCenter(_front, _pos, _rotationSpeed);
+            _front = utils.rotatePointAroundCenter(_front, _center, _rotationSpeed);
             _angleDeg += _rotationSpeed;
             return true;
         }
 
         isColliding = 0;
-        rightRaycast = utils.rotatePointAroundCenter(rightRaycast, _pos, -raycastAngle);
+        rightRaycast = utils.rotatePointAroundCenter(rightRaycast, _center, -raycastAngle);
         for (auto it : obstacles)
-            isColliding += utils.segmentIntersectsRectangle(*it, _pos, rightRaycast);
+            isColliding += utils.segmentIntersectsRectangle(*it, _center, rightRaycast);
         if (isColliding == 0) {
-            int rotationSpeed = -static_cast<float>(_rotationSpeed);
-            _front = utils.rotatePointAroundCenter(_front, _pos, rotationSpeed);
-            _angleDeg += rotationSpeed;
+            _front = utils.rotatePointAroundCenter(_front, _center, -_rotationSpeed);
+            _angleDeg -= _rotationSpeed;
             return true;
         }
     }
@@ -293,8 +304,8 @@ bool Boid::wallAvoidance(sf::Vector2u windowSize, const std::vector<sf::FloatRec
 
 void Boid::updatePos(const sf::Vector2u windowSize)
 {
-    glm::vec2 directionNormalized = utils.normalizeVector2f(_front, _pos);
-    checkBorder(windowSize);
+    glm::vec2 directionNormalized = utils.normalizeVector2f(_front, _center);
+    // checkBorder(windowSize);
     move(glm::vec2{(directionNormalized.x * _speed), (directionNormalized.y * _speed)});
     updateGridID();
 }
@@ -302,12 +313,12 @@ void Boid::updatePos(const sf::Vector2u windowSize)
 void Boid::update(const sf::Vector2u windowSize, const std::map<int, std::vector<Boid *>> &hashtable, const std::vector<sf::FloatRect *> &obstacles)
 {
     bool check = false;
-    /*check = wallAvoidance(windowSize, obstacles);
+    check = wallAvoidance(windowSize, obstacles);
     if (!check && hashtable.size() > 0) {
         findInRange(hashtable);
         check = separation();
         if (!check) check = alignment();
         if (!check) cohesion();
-    }*/
-    //updatePos(windowSize);
+    }
+    updatePos(windowSize);
 }

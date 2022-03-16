@@ -8,19 +8,19 @@ Utils::~Utils()
 {
 }
 
-unsigned int Utils::mappedDegrees(float radians)
+int Utils::mappedDegrees(float radians)
 {
     float degrees = radians * (180.0 / M_PI);
     return static_cast<int>(degrees + 360) % 360;
 }
 
-unsigned int Utils::mappedDegreesAngleDif(const glm::vec2 a, const glm::vec2 tail, const glm::vec2 b)
+int Utils::mappedDegreesAngleDif(const glm::vec2 a, const glm::vec2 tail, const glm::vec2 b)
 {
     float anglePoint = angleBetweenVector2f(tail, a);
     float angleBoid = angleBetweenVector2f(tail, b);
     float angleDif = anglePoint - angleBoid;
     float degreesDif = angleDif * (180.0 / M_PI);
-    unsigned int mappedDegrees = static_cast<int>(degreesDif + 360) % 360;
+    int mappedDegrees = static_cast<int>(degreesDif + 360) % 360;
 
     return mappedDegrees;
 }

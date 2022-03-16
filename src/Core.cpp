@@ -3,19 +3,24 @@
 Core::Core(const std::string &title, unsigned int framerate)
 {
     srand(time(NULL));
-    _window.create(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), title);
+    sf::ContextSettings settings;
+    settings.antialiasingLevel = 0;
+    _window.create(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), title, sf::Style::Default, settings);
     // _window.setFramerateLimit(framerate);
 
     if(!gladLoadGL()) throw Exception("gladLoadGL failed");
-
 
     generateBorders();
     for (int i = 0; i < BOIDS_COUNT; i++) {
         int x = WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2);
         int y = WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2);
-        _boids.push_back(new Boid(glm::vec2{x, y}, _window.getSize().x, 4, 4, 4));
+        _boids.push_back(new Boid(glm::vec2{x, y}, _window.getSize().x, 6, 4, 4));
     }
+
+    _worldPosScaleAngleDeg = new float[BOIDS_COUNT][5];
+
     openGlInit();
+
     _placeHolder = nullptr;
     _leftMouseClick = false;
     _running = true;
@@ -25,6 +30,7 @@ Core::Core(const std::string &title, unsigned int framerate)
 
 Core::~Core()
 {
+    delete[] _worldPosScaleAngleDeg;
     for (auto it : _boids)
         delete it;
     // for (auto it : _obstacles)
@@ -80,22 +86,20 @@ void Core::events()
     }
 }
 
-// void Core::drawObstacles()
-// {
-//     sf::RectangleShape rectangle;
-//     for (auto it : _obstacles) {
-//         rectangle.setPosition(sf::Vector2f{it->left, it->top});
-//         rectangle.setSize(sf::Vector2f{it->width, it->height});
-//         _window.draw(rectangle);
-//     }
-//     if (_placeHolder) {
-//         rectangle.setPosition(sf::Vector2f{_placeHolder->left, _placeHolder->top});
-//         rectangle.setSize(sf::Vector2f{_placeHolder->width, _placeHolder->height});
-//         _window.draw(rectangle);
-//     }
-// }
-
-glm::mat4 model[BOIDS_COUNT];
+void Core::drawObstacles()
+{
+    sf::RectangleShape rectangle;
+    for (auto it : _obstacles) {
+        rectangle.setPosition(sf::Vector2f{it->left, it->top});
+        rectangle.setSize(sf::Vector2f{it->width, it->height});
+        _window.draw(rectangle);
+    }
+    if (_placeHolder) {
+        rectangle.setPosition(sf::Vector2f{_placeHolder->left, _placeHolder->top});
+        rectangle.setSize(sf::Vector2f{_placeHolder->width, _placeHolder->height});
+        _window.draw(rectangle);
+    }
+}
 
 void Core::display()
 {
@@ -103,36 +107,45 @@ void Core::display()
     glClear(GL_COLOR_BUFFER_BIT);
 
     glUseProgram(_shaderProgram);
-    // glm::mat4 model[BOIDS_COUNT];
     glUniformMatrix4fv(glGetUniformLocation(_shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
-    // for (unsigned int i = 0; i < BOIDS_COUNT; i++)
-    //     model[i] = _boids[i]->getModelMatrix(_window);
+
+    glm::vec2 worldPos;
+    glm::vec2 scale;
+    for (unsigned int i = 0; i < BOIDS_COUNT; i++) {
+        scale = _boids[i]->getScale();
+        worldPos = _boids[i]->getWorldPosition();
+
+        _worldPosScaleAngleDeg[i][0] = worldPos.x;
+        _worldPosScaleAngleDeg[i][1] = worldPos.y;
+        _worldPosScaleAngleDeg[i][2] = scale.x;
+        _worldPosScaleAngleDeg[i][3] = scale.y;
+        _worldPosScaleAngleDeg[i][4] = _boids[i]->getAngleDeg();
+    }
+
     glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(glm::mat4) * BOIDS_COUNT, &model[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, (sizeof(glm::vec4) + sizeof(float)) * BOIDS_COUNT, &_worldPosScaleAngleDeg[0], GL_STATIC_DRAW);
     Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 3, BOIDS_COUNT);
     Boid::clearDrawingBuffers(_VAO);
     glUseProgram(0);
 
-    //for (auto it : _boids)
-    //    it->draw(_window);
-    //drawObstacles();
+    drawObstacles();
     _window.display();
 }
 
 void Core::update()
 {
-    //_hashTable.clear();
-    //for (auto it : _boids)
-    //    _hashTable[it->getGridID()].push_back(it);
-    //for (auto it : _boids)
-    //    it->update(_window.getSize(), _hashTable, _obstacles);
-    //if (_leftMouseClick) {
-    //    _placeHolder->width = static_cast<float>(sf::Mouse::getPosition(_window).x) - _placeHolder->left;
-    //    _placeHolder->height = static_cast<float>(sf::Mouse::getPosition(_window).y) - _placeHolder->top;
-    //    if (std::abs(_placeHolder->width) > std::abs(_placeHolder->height)) _placeHolder->height = 1.0;
-    //    else _placeHolder->width = 1.0;
-    //}
+    _hashTable.clear();
+    for (auto it : _boids)
+        _hashTable[it->getGridID()].push_back(it);
+    for (auto it : _boids)
+        it->update(_window.getSize(), _hashTable, _obstacles);
+    if (_leftMouseClick) {
+        _placeHolder->width = static_cast<float>(sf::Mouse::getPosition(_window).x) - _placeHolder->left;
+        _placeHolder->height = static_cast<float>(sf::Mouse::getPosition(_window).y) - _placeHolder->top;
+        if (std::abs(_placeHolder->width) > std::abs(_placeHolder->height)) _placeHolder->height = 1.0;
+        else _placeHolder->width = 1.0;
+    }
 }
 
 const char *Core::getFileContent(const std::string& path) const
@@ -207,9 +220,6 @@ void Core::openGlInit()
 
     _projection = glm::mat4(1.0f);
     _projection = glm::ortho(0.0f, (float)_window.getSize().x, (float)_window.getSize().y, 0.0f, -1.0f, 1.0f);
-
-    for (unsigned int i = 0; i < BOIDS_COUNT; i++)
-        model[i] = _boids[i]->getModelMatrix(_window);
 }
 
 void Core::run()
@@ -217,19 +227,17 @@ void Core::run()
     double lastTime = _runTime.getElapsedTime().asSeconds();
     int nbFrames = 0;
 
-    do {
-        // Measure speed
+    while (_running) {
         double currentTime = _runTime.getElapsedTime().asSeconds();
         nbFrames++;
         if (currentTime - lastTime >= 1.0) {
-            printf("%d fps/\n", nbFrames);
+            printf("%d fps\n", nbFrames);
             nbFrames = 0;
             lastTime += 1.0;
         }
         events();
-        update();
+        // update();
         display();
     }
-    while (_running);
     _window.close();
 }

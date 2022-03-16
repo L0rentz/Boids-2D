@@ -66,7 +66,7 @@ class Core {
         unsigned int _fragmentShader;
         unsigned int _texture[2];
         glm::mat4 _projection;
-        glm::mat4 _model;
+        float (*_worldPosScaleAngleDeg)[5];
 };
 
 #endif /* !CORE_HPP_ */
