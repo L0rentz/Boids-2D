@@ -1,20 +1,21 @@
 #include "Core.hpp"
+#include "glad/glad.h"
 
-Core::Core(const std::string &title, unsigned int framerate)
+Core::Core()
 {
-    srand(time(NULL));
+    srand(static_cast<unsigned int>(time(NULL)));
     sf::ContextSettings settings;
     settings.antialiasingLevel = 0;
-    _window.create(sf::VideoMode(sf::VideoMode::getDesktopMode().width, sf::VideoMode::getDesktopMode().height), title, sf::Style::Default, settings);
-    // _window.setFramerateLimit(framerate);
+    _window.create(sf::VideoMode(1920, 1080), "Boids simulation", sf::Style::Default, settings);
+    // _window.setFramerateLimit(60);
 
     if(!gladLoadGL()) throw Exception("gladLoadGL failed");
 
     generateBorders();
     for (int i = 0; i < BOIDS_COUNT; i++) {
-        int x = WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2);
-        int y = WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2);
-        _boids.push_back(new Boid(glm::vec2{x, y}, _window.getSize().x, 6, 4, 4));
+        int x = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2));
+        int y = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2));
+        _boids.push_back(new Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 6, 4, 4));
     }
 
     _worldPosScaleAngleDeg = new float[BOIDS_COUNT][5];
@@ -119,7 +120,7 @@ void Core::display()
         _worldPosScaleAngleDeg[i][1] = worldPos.y;
         _worldPosScaleAngleDeg[i][2] = scale.x;
         _worldPosScaleAngleDeg[i][3] = scale.y;
-        _worldPosScaleAngleDeg[i][4] = _boids[i]->getAngleDeg();
+        _worldPosScaleAngleDeg[i][4] = static_cast<float>(_boids[i]->getAngleDeg());
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);

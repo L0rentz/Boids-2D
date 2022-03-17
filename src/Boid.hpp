@@ -5,7 +5,6 @@
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
 #include "gtc/type_ptr.hpp"
-#include "glad/glad.h"
 
 #include <SFML/Graphics.hpp>
 #include <iostream>
@@ -22,7 +21,7 @@ class Boid {
         int getGridID() const;
         const glm::vec2 &getWorldPosition() const;
         const glm::vec2 &getScale() const;
-        float getAngleDeg() const;
+        double getAngleDeg() const;
 
         static void prepareDrawingBuffers(const unsigned int VAO, const unsigned int VBO, const unsigned int instanceVBO);
         static void clearDrawingBuffers(const unsigned int VAO);
@@ -55,7 +54,7 @@ class Boid {
         float _separationRange;
         float _maxRange;
         int _fleet;
-        float _angleDeg;
+        double _angleDeg;
 
         // Spatial hashing
         int _gridCell;

@@ -10,7 +10,7 @@ Utils::~Utils()
 
 int Utils::mappedDegrees(float radians)
 {
-    float degrees = radians * (180.0 / M_PI);
+    double degrees = radians * (180.0 / MY_PI);
     return static_cast<int>(degrees + 360) % 360;
 }
 
@@ -19,7 +19,7 @@ int Utils::mappedDegreesAngleDif(const glm::vec2 a, const glm::vec2 tail, const 
     float anglePoint = angleBetweenVector2f(tail, a);
     float angleBoid = angleBetweenVector2f(tail, b);
     float angleDif = anglePoint - angleBoid;
-    float degreesDif = angleDif * (180.0 / M_PI);
+    double degreesDif = angleDif * (180.0 / MY_PI);
     int mappedDegrees = static_cast<int>(degreesDif + 360) % 360;
 
     return mappedDegrees;
@@ -27,7 +27,7 @@ int Utils::mappedDegreesAngleDif(const glm::vec2 a, const glm::vec2 tail, const 
 
 float Utils::magnitudeVector2f(const glm::vec2 a, const glm::vec2 b)
 {
-    return std::sqrt(std::pow(b.x - a.x, 2) + std::pow(b.y - a.y, 2));
+    return static_cast<float>(std::sqrt(std::pow(b.x - a.x, 2) + std::pow(b.y - a.y, 2)));
 }
 
 float Utils::dotProductVector2f(const glm::vec2 a, const glm::vec2 b)
@@ -40,21 +40,21 @@ float Utils::angleBetweenVector2f(const glm::vec2 a, const glm::vec2 b)
     return atan2(a.y - b.y, a.x - b.x);
 }
 
-glm::vec2 Utils::rotatePointAroundCenter(glm::vec2 point, const glm::vec2 center, const float degrees)
+glm::vec2 Utils::rotatePointAroundCenter(glm::vec2 point, const glm::vec2 center, const double degrees)
 {
-    float angleRad = degrees * M_PI / 180;
+    double angleRad = degrees * MY_PI / 180;
 
-    float sinVal = sin(angleRad);
-    float cosVal = cos(angleRad);
+    double sinVal = sin(angleRad);
+    double cosVal = cos(angleRad);
 
     point.x -= center.x;
     point.y -= center.y;
 
-    float xnew = point.x * cosVal - point.y * sinVal;
-    float ynew = point.x * sinVal + point.y * cosVal;
+    double xnew = point.x * cosVal - point.y * sinVal;
+    double ynew = point.x * sinVal + point.y * cosVal;
 
-    point.x = xnew + center.x;
-    point.y = ynew + center.y;
+    point.x = static_cast<float>(xnew + center.x);
+    point.y = static_cast<float>(ynew + center.y);
 
     return point;
 }

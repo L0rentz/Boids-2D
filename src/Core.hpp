@@ -3,7 +3,6 @@
 
 #include "stb_image.h"
 #include "Boid.hpp"
-#include "glad/glad.h"
 #include "Exception.hpp"
 
 #include "glm.hpp"
@@ -11,23 +10,22 @@
 #include "gtc/type_ptr.hpp"
 
 #include <SFML/Graphics.hpp>
-#include <SFML/OpenGL.hpp>
 #include <time.h>
 #include <map>
 #include <fstream>
 #include <cstring>
 
 #ifdef _WIN32
-    #define SHADER_PATH "../src/"
+    #define SHADER_PATH "../../src/"
 #else
     #define SHADER_PATH "src/"
 #endif
 
-#define BOIDS_COUNT 500000
+#define BOIDS_COUNT 100
 
 class Core {
     public:
-        Core(const std::string &title = "Boids simulation", unsigned int framerate = 60);
+        Core();
         ~Core();
 
         void run();

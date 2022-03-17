@@ -1,4 +1,5 @@
 #include "Boid.hpp"
+#include "glad/glad.h"
 
 
 // --------------- Static --------------- //
@@ -22,15 +23,15 @@ void Boid::prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned in
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Boid::vertices), Boid::vertices, GL_STATIC_DRAW);
     glBindVertexArray(VAO);
-    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, 5 * floatSize, (void *)0);
+    glVertexAttribPointer(0, 2, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(5 * floatSize), (void *)0);
     glEnableVertexAttribArray(0);
-    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 5 * floatSize, (void *)(2 * floatSize));
+    glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(5 * floatSize), (void *)(2 * floatSize));
     glEnableVertexAttribArray(1);
     glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
-    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, vec4Size + floatSize, (void*)0);
+    glVertexAttribPointer(2, 4, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(vec4Size + floatSize), (void*)0);
     glEnableVertexAttribArray(2);
     glVertexAttribDivisor(2, 1);
-    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, vec4Size + floatSize, (void*)(4 * floatSize));
+    glVertexAttribPointer(3, 1, GL_FLOAT, GL_FALSE, static_cast<GLsizei>(vec4Size + floatSize), (void*)(4 * floatSize));
     glEnableVertexAttribArray(3);
     glVertexAttribDivisor(3, 1);
 }
@@ -75,11 +76,11 @@ Boid::Boid(const glm::vec2 position, const float gridSize, const int size, const
     _angleDeg = rand() % 360;
     _front = utils.rotatePointAroundCenter(_front, _center, _angleDeg);
 
-    float min = 0.0;
-    float max = gridSize;
-    _cellSize = gridSize / 10;
-    _width = (max - min) / _cellSize;
-    _buckets = std::pow(_width, 2);
+    double min = 0.0;
+    double max = gridSize;
+    _cellSize = static_cast<int>(gridSize / 10);
+    _width = static_cast<int>((max - min) / _cellSize);
+    _buckets = static_cast<int>(std::pow(_width, 2));
     updateGridID();
 }
 
@@ -92,7 +93,7 @@ void Boid::setVerticeModel(float x, float y, unsigned int i)
     if (i >= vSize || i % 5 != 0) return;
     x = _center.x - x;
     y = _center.y - y;
-    glm::vec2 normalized = glm::normalize((glm::vec2){x, y});
+    glm::vec2 normalized = glm::normalize(static_cast<glm::vec2>(x, y));
     vertices[i] = normalized.x;
     vertices[i + 1] = normalized.y;
 }
@@ -107,14 +108,14 @@ const glm::vec2 &Boid::getScale() const
     return _scale;
 }
 
-float Boid::getAngleDeg() const
+double Boid::getAngleDeg() const
 {
     return _angleDeg;
 }
 
 void Boid::updateGridID()
 {
-    _gridCell = std::floor(_center.x / _cellSize) + std::floor(_center.y / _cellSize) * _width;
+    _gridCell = static_cast<int>(std::floor(_center.x / _cellSize) + std::floor(_center.y / _cellSize) * _width);
 }
 
 int Boid::getGridID() const
