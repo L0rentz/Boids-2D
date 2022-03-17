@@ -39,7 +39,6 @@ Core::Core()
 
 Core::~Core()
 {
-    delete[] _worldPosScaleAngleDeg;
     delete[] _boids;
     // for (auto it : _boids)
     //     delete it;
