@@ -14,6 +14,7 @@
 #include <map>
 #include <fstream>
 #include <cstring>
+#include <thread>
 
 #ifdef _WIN32
     #define SHADER_PATH "../../src/"
@@ -35,17 +36,14 @@ class Core {
         void events();
         void display();
         void update();
-        void generateBorders();
-        void drawObstacles();
-        void createObstacleOnClick();
 
         sf::RenderWindow _window;
         sf::Event _event;
         Boid *_boids;
-        std::vector<sf::FloatRect *> _obstacles;
-        sf::FloatRect *_placeHolder;
+        float *_worldPosScaleAngleDeg;
+        unsigned int _offset;
+        int _arraySize;
         std::map<int, std::vector<Boid *>> _hashTable;
-        bool _leftMouseClick;
         bool _running;
         sf::Clock _runTime;
 
@@ -58,13 +56,15 @@ class Core {
         void openGlDraw();
 
         bool _wireframe;
-        unsigned int _VAO, _VBO, _instanceVBO;
-        unsigned int _shaderProgram;
+        unsigned int _VAO, _VBO, _instanceVBO, _SSBO;
+        unsigned int _vertexFragProgram;
+        unsigned int _computeProgram;
         unsigned int _vertexShader;
+        unsigned int _computeShader;
         unsigned int _fragmentShader;
         unsigned int _texture[2];
         glm::mat4 _projection;
-        float (*_worldPosScaleAngleDeg)[5];
+
 };
 
 #endif /* !CORE_HPP_ */

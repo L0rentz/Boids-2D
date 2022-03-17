@@ -11,20 +11,27 @@ Core::Core()
 
     if(!gladLoadGL()) throw Exception("gladLoadGL failed");
 
-    generateBorders();
     _boids = new Boid[BOIDS_COUNT];
     for (int i = 0; i < BOIDS_COUNT; i++) {
         int x = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2));
         int y = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2));
-        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 6, 4, 4);
+        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 4, 4, 4);
     }
 
-    _worldPosScaleAngleDeg = new float[BOIDS_COUNT][5];
+    _offset = 5;
+    _arraySize = BOIDS_COUNT * _offset + 1;
+    _worldPosScaleAngleDeg = new float[_arraySize];
+    _worldPosScaleAngleDeg[0] = static_cast<float>(_arraySize);
+    for (unsigned int i = 0, offset = 1; i < BOIDS_COUNT; i++, offset += _offset) {
+        _worldPosScaleAngleDeg[0 + offset] = _boids[i]._center.x;
+        _worldPosScaleAngleDeg[1 + offset] = _boids[i]._center.y;
+        _worldPosScaleAngleDeg[2 + offset] = _boids[i]._scale.x;
+        _worldPosScaleAngleDeg[3 + offset] = _boids[i]._scale.y;
+        _worldPosScaleAngleDeg[4 + offset] = static_cast<float>(_boids[i]._angleDeg);
+    }
 
     openGlInit();
 
-    _placeHolder = nullptr;
-    _leftMouseClick = false;
     _running = true;
     _wireframe = false;
     _runTime.restart();
@@ -40,14 +47,6 @@ Core::~Core()
     //     delete it;
 }
 
-void Core::generateBorders()
-{
-    _obstacles.push_back(new sf::FloatRect(WALLOFFSET, WALLOFFSET, static_cast<float>(_window.getSize().x - WALLOFFSET * 2), 1));
-    _obstacles.push_back(new sf::FloatRect(WALLOFFSET, static_cast<float>(_window.getSize().y - WALLOFFSET), static_cast<float>(_window.getSize().x - WALLOFFSET * 2), 1));
-    _obstacles.push_back(new sf::FloatRect(WALLOFFSET, WALLOFFSET, 1, static_cast<float>(_window.getSize().y - WALLOFFSET * 2)));
-    _obstacles.push_back(new sf::FloatRect(static_cast<float>(_window.getSize().x - WALLOFFSET), WALLOFFSET, 1, static_cast<float>(_window.getSize().y - WALLOFFSET * 2)));
-}
-
 void Core::events()
 {
     while (_window.pollEvent(_event)) {
@@ -58,49 +57,7 @@ void Core::events()
                 _wireframe ? glPolygonMode(GL_FRONT_AND_BACK, GL_FILL) : glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
                 _wireframe = !_wireframe;
             }
-            if (_event.key.code == sf::Keyboard::BackSpace) {
-                if (_obstacles.size() > 4) {
-                    delete _obstacles.back();
-                    _obstacles.pop_back();
-                }
-            }
         }
-        if (_event.type == sf::Event::MouseButtonPressed) {
-            if (_event.mouseButton.button == sf::Mouse::Left) {
-                _leftMouseClick = true;
-                _placeHolder = new sf::FloatRect(static_cast<float>(sf::Mouse::getPosition(_window).x), static_cast<float>(sf::Mouse::getPosition(_window).y), 0, 0);
-            }
-        }
-        if (_event.type == sf::Event::MouseButtonReleased) {
-            if (_event.mouseButton.button == sf::Mouse::Left) {
-                _leftMouseClick = false;
-                if (_placeHolder->height < 0) {
-                    _placeHolder->top -= std::abs(_placeHolder->height);
-                    _placeHolder->height *= -1;
-                }
-                else if (_placeHolder->width < 0) {
-                    _placeHolder->left -= std::abs(_placeHolder->width);
-                    _placeHolder->width *= -1;
-                }
-                _obstacles.push_back(_placeHolder);
-                _placeHolder = nullptr;
-            }
-        }
-    }
-}
-
-void Core::drawObstacles()
-{
-    sf::RectangleShape rectangle;
-    for (auto it : _obstacles) {
-        rectangle.setPosition(sf::Vector2f{it->left, it->top});
-        rectangle.setSize(sf::Vector2f{it->width, it->height});
-        _window.draw(rectangle);
-    }
-    if (_placeHolder) {
-        rectangle.setPosition(sf::Vector2f{_placeHolder->left, _placeHolder->top});
-        rectangle.setSize(sf::Vector2f{_placeHolder->width, _placeHolder->height});
-        _window.draw(rectangle);
     }
 }
 
@@ -109,38 +66,26 @@ void Core::display()
     glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    glUseProgram(_shaderProgram);
-    glUniformMatrix4fv(glGetUniformLocation(_shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
+    glUseProgram(_computeProgram);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _SSBO);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _arraySize, &_worldPosScaleAngleDeg[0], GL_DYNAMIC_DRAW);
+            glDispatchCompute(static_cast<GLuint>(glm::ceil(_arraySize / static_cast<float>(_offset) / 32.0f)), 1, 1);
+            glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+            _worldPosScaleAngleDeg = (float *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+            glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+    glUseProgram(0);
 
-    // glm::vec2 worldPos;
-    // glm::vec2 scale;
-    // for (unsigned int i = 0; i < BOIDS_COUNT; i++) {
-    //     scale = _boids[i]->getScale();
-    //     worldPos = _boids[i]->getWorldPosition();
-
-    //     _worldPosScaleAngleDeg[i][0] = worldPos.x;
-    //     _worldPosScaleAngleDeg[i][1] = worldPos.y;
-    //     _worldPosScaleAngleDeg[i][2] = scale.x;
-    //     _worldPosScaleAngleDeg[i][3] = scale.y;
-    //     _worldPosScaleAngleDeg[i][4] = static_cast<float>(_boids[i]->getAngleDeg());
-    // }
-
-    for (unsigned int i = 0; i < BOIDS_COUNT; i++) {
-        _worldPosScaleAngleDeg[i][0] = _boids[i]._center.x;
-        _worldPosScaleAngleDeg[i][1] = _boids[i]._center.y;
-        _worldPosScaleAngleDeg[i][2] = _boids[i]._scale.x;
-        _worldPosScaleAngleDeg[i][3] = _boids[i]._scale.y;
-        _worldPosScaleAngleDeg[i][4] = static_cast<float>(_boids[i]._angleDeg);
-    }
+    glUseProgram(_vertexFragProgram);
+    glUniformMatrix4fv(glGetUniformLocation(_vertexFragProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
 
     glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, (sizeof(glm::vec4) + sizeof(float)) * BOIDS_COUNT, &_worldPosScaleAngleDeg[0], GL_STATIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, (sizeof(glm::vec4) + sizeof(float)) * BOIDS_COUNT, &_worldPosScaleAngleDeg[1], GL_DYNAMIC_DRAW);
     Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO);
     glDrawArraysInstanced(GL_TRIANGLES, 0, 3, BOIDS_COUNT);
     Boid::clearDrawingBuffers(_VAO);
     glUseProgram(0);
 
-    drawObstacles();
     _window.display();
 }
 
@@ -151,12 +96,6 @@ void Core::display()
 //         _hashTable[it->getGridID()].push_back(it);
 //     for (auto it : _boids)
 //         it->update(_window.getSize(), _hashTable, _obstacles);
-//     if (_leftMouseClick) {
-//         _placeHolder->width = static_cast<float>(sf::Mouse::getPosition(_window).x) - _placeHolder->left;
-//         _placeHolder->height = static_cast<float>(sf::Mouse::getPosition(_window).y) - _placeHolder->top;
-//         if (std::abs(_placeHolder->width) > std::abs(_placeHolder->height)) _placeHolder->height = 1.0;
-//         else _placeHolder->width = 1.0;
-//     }
 // }
 
 const char *Core::getFileContent(const std::string& path) const
@@ -214,20 +153,40 @@ void Core::openGlInit()
     glCompileShader(_fragmentShader);
     checkShaderCompileError(_fragmentShader);
 
-    _shaderProgram = glCreateProgram();
-    glAttachShader(_shaderProgram, _vertexShader);
-    glAttachShader(_shaderProgram, _fragmentShader);
-    glLinkProgram(_shaderProgram);
-    checkShaderProgramCompileError(_shaderProgram);
+    _vertexFragProgram = glCreateProgram();
+    glAttachShader(_vertexFragProgram, _vertexShader);
+    glAttachShader(_vertexFragProgram, _fragmentShader);
+    glLinkProgram(_vertexFragProgram);
+    checkShaderProgramCompileError(_vertexFragProgram);
+
+    const char *computeShaderSource = getFileContent(std::string(SHADER_PATH) + "boid.comp");
+    _computeShader = glCreateShader(GL_COMPUTE_SHADER);
+    glShaderSource(_computeShader, 1, &computeShaderSource, NULL);
+    glCompileShader(_computeShader);
+    checkShaderCompileError(_computeShader);
+
+    _computeProgram = glCreateProgram();
+    glAttachShader(_computeProgram, _computeShader);
+    glLinkProgram(_computeProgram);
+    checkShaderProgramCompileError(_computeProgram);
 
     glDeleteShader(_vertexShader);
-    glDeleteShader(_fragmentShader);
     delete[] vertexShaderSource;
+    glDeleteShader(_fragmentShader);
     delete[] fragmentShaderSource;
+    glDeleteShader(_computeShader);
+    delete[] computeShaderSource;
 
     glGenBuffers(1, &_VBO);
     glGenBuffers(1, &_instanceVBO);
     glGenVertexArrays(1, &_VAO);
+
+    glGenBuffers(1, &_SSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, _SSBO);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _SSBO);
+            glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _arraySize, &_worldPosScaleAngleDeg[0], GL_STATIC_DRAW);
+        glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     _projection = glm::mat4(1.0f);
     _projection = glm::ortho(0.0f, (float)_window.getSize().x, (float)_window.getSize().y, 0.0f, -1.0f, 1.0f);
@@ -250,5 +209,6 @@ void Core::run()
         // update();
         display();
     }
+    glDeleteBuffers(1, &_SSBO);
     _window.close();
 }

@@ -1,0 +1,17 @@
+#version 460 core
+
+layout (local_size_x = 32) in;
+
+layout(std430, binding = 0) buffer sharedBuffer {
+    float worldPosScaleAngleDeg[];
+};
+
+void main()
+{
+    float arraySize = worldPosScaleAngleDeg[0];
+    if (gl_GlobalInvocationID.x == 0 || gl_GlobalInvocationID.x >= arraySize) return;
+    
+    uint startIdx = (gl_GlobalInvocationID.x - 1) * 5 + 1;
+    for (uint i = startIdx; i < startIdx + 5; i++)
+        worldPosScaleAngleDeg[i] = 12;
+}

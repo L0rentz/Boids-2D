@@ -77,7 +77,8 @@ Boid::Boid(const glm::vec2 position, const float gridSize, const int size, const
     }
     _model = glm::mat4(1.0f);
 
-    _angleDeg = rand() % 360;
+    // _angleDeg = rand() % 360;
+    _angleDeg = 90.0;
     _front = utils.rotatePointAroundCenter(_front, _center, _angleDeg);
 
     double min = 0.0;
