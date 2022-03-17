@@ -21,7 +21,7 @@
     #define SHADER_PATH "src/"
 #endif
 
-#define BOIDS_COUNT 100
+#define BOIDS_COUNT 1000000
 
 class Core {
     public:
@@ -41,7 +41,7 @@ class Core {
 
         sf::RenderWindow _window;
         sf::Event _event;
-        std::vector<Boid *> _boids;
+        Boid *_boids;
         std::vector<sf::FloatRect *> _obstacles;
         sf::FloatRect *_placeHolder;
         std::map<int, std::vector<Boid *>> _hashTable;

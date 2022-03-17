@@ -14,6 +14,7 @@
 
 class Boid {
     public:
+        Boid();
         Boid(const glm::vec2 position, const float gridSize, const int scale = 20, const int speed = 10, const int rotationSpeed = 5);
         ~Boid();
 
@@ -25,6 +26,10 @@ class Boid {
 
         static void prepareDrawingBuffers(const unsigned int VAO, const unsigned int VBO, const unsigned int instanceVBO);
         static void clearDrawingBuffers(const unsigned int VAO);
+
+        glm::vec2 _center;
+        glm::vec2 _scale;
+        double _angleDeg;
 
     protected:
         static const unsigned int vSize;
@@ -39,8 +44,8 @@ class Boid {
 
         glm::mat4 _model;
         glm::vec2 _front;
-        glm::vec2 _center;
-        glm::vec2 _scale;
+        // glm::vec2 _center;
+        // glm::vec2 _scale;
 
         // Algo
         std::vector<std::pair<Boid *, std::pair<float, unsigned int>>> _inRange;
@@ -54,7 +59,7 @@ class Boid {
         float _separationRange;
         float _maxRange;
         int _fleet;
-        double _angleDeg;
+        // double _angleDeg;
 
         // Spatial hashing
         int _gridCell;

@@ -3,7 +3,7 @@
 
 Core::Core()
 {
-    srand(static_cast<unsigned int>(time(NULL)));
+    // srand(static_cast<unsigned int>(time(NULL)));
     sf::ContextSettings settings;
     settings.antialiasingLevel = 0;
     _window.create(sf::VideoMode(1920, 1080), "Boids simulation", sf::Style::Default, settings);
@@ -12,10 +12,11 @@ Core::Core()
     if(!gladLoadGL()) throw Exception("gladLoadGL failed");
 
     generateBorders();
+    _boids = new Boid[BOIDS_COUNT];
     for (int i = 0; i < BOIDS_COUNT; i++) {
         int x = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2));
         int y = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2));
-        _boids.push_back(new Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 6, 4, 4));
+        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 6, 4, 4);
     }
 
     _worldPosScaleAngleDeg = new float[BOIDS_COUNT][5];
@@ -32,8 +33,9 @@ Core::Core()
 Core::~Core()
 {
     delete[] _worldPosScaleAngleDeg;
-    for (auto it : _boids)
-        delete it;
+    delete[] _boids;
+    // for (auto it : _boids)
+    //     delete it;
     // for (auto it : _obstacles)
     //     delete it;
 }
@@ -110,17 +112,25 @@ void Core::display()
     glUseProgram(_shaderProgram);
     glUniformMatrix4fv(glGetUniformLocation(_shaderProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
 
-    glm::vec2 worldPos;
-    glm::vec2 scale;
-    for (unsigned int i = 0; i < BOIDS_COUNT; i++) {
-        scale = _boids[i]->getScale();
-        worldPos = _boids[i]->getWorldPosition();
+    // glm::vec2 worldPos;
+    // glm::vec2 scale;
+    // for (unsigned int i = 0; i < BOIDS_COUNT; i++) {
+    //     scale = _boids[i]->getScale();
+    //     worldPos = _boids[i]->getWorldPosition();
 
-        _worldPosScaleAngleDeg[i][0] = worldPos.x;
-        _worldPosScaleAngleDeg[i][1] = worldPos.y;
-        _worldPosScaleAngleDeg[i][2] = scale.x;
-        _worldPosScaleAngleDeg[i][3] = scale.y;
-        _worldPosScaleAngleDeg[i][4] = static_cast<float>(_boids[i]->getAngleDeg());
+    //     _worldPosScaleAngleDeg[i][0] = worldPos.x;
+    //     _worldPosScaleAngleDeg[i][1] = worldPos.y;
+    //     _worldPosScaleAngleDeg[i][2] = scale.x;
+    //     _worldPosScaleAngleDeg[i][3] = scale.y;
+    //     _worldPosScaleAngleDeg[i][4] = static_cast<float>(_boids[i]->getAngleDeg());
+    // }
+
+    for (unsigned int i = 0; i < BOIDS_COUNT; i++) {
+        _worldPosScaleAngleDeg[i][0] = _boids[i]._center.x;
+        _worldPosScaleAngleDeg[i][1] = _boids[i]._center.y;
+        _worldPosScaleAngleDeg[i][2] = _boids[i]._scale.x;
+        _worldPosScaleAngleDeg[i][3] = _boids[i]._scale.y;
+        _worldPosScaleAngleDeg[i][4] = static_cast<float>(_boids[i]._angleDeg);
     }
 
     glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
@@ -134,20 +144,20 @@ void Core::display()
     _window.display();
 }
 
-void Core::update()
-{
-    _hashTable.clear();
-    for (auto it : _boids)
-        _hashTable[it->getGridID()].push_back(it);
-    for (auto it : _boids)
-        it->update(_window.getSize(), _hashTable, _obstacles);
-    if (_leftMouseClick) {
-        _placeHolder->width = static_cast<float>(sf::Mouse::getPosition(_window).x) - _placeHolder->left;
-        _placeHolder->height = static_cast<float>(sf::Mouse::getPosition(_window).y) - _placeHolder->top;
-        if (std::abs(_placeHolder->width) > std::abs(_placeHolder->height)) _placeHolder->height = 1.0;
-        else _placeHolder->width = 1.0;
-    }
-}
+// void Core::update()
+// {
+//     _hashTable.clear();
+//     for (auto it : _boids)
+//         _hashTable[it->getGridID()].push_back(it);
+//     for (auto it : _boids)
+//         it->update(_window.getSize(), _hashTable, _obstacles);
+//     if (_leftMouseClick) {
+//         _placeHolder->width = static_cast<float>(sf::Mouse::getPosition(_window).x) - _placeHolder->left;
+//         _placeHolder->height = static_cast<float>(sf::Mouse::getPosition(_window).y) - _placeHolder->top;
+//         if (std::abs(_placeHolder->width) > std::abs(_placeHolder->height)) _placeHolder->height = 1.0;
+//         else _placeHolder->width = 1.0;
+//     }
+// }
 
 const char *Core::getFileContent(const std::string& path) const
 {

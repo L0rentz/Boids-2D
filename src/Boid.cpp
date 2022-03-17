@@ -49,6 +49,10 @@ void Boid::clearDrawingBuffers(unsigned int VAO)
 // -------------------------------------- //
 
 
+Boid::Boid()
+{
+}
+
 Boid::Boid(const glm::vec2 position, const float gridSize, const int size, const int speed, const int rotationSpeed)
 {
     _id = nextID++;
@@ -93,7 +97,7 @@ void Boid::setVerticeModel(float x, float y, unsigned int i)
     if (i >= vSize || i % 5 != 0) return;
     x = _center.x - x;
     y = _center.y - y;
-    glm::vec2 normalized = glm::normalize(static_cast<glm::vec2>(x, y));
+    glm::vec2 normalized = glm::normalize(glm::vec2{x, y});
     vertices[i] = normalized.x;
     vertices[i + 1] = normalized.y;
 }
