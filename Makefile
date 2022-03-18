@@ -26,7 +26,7 @@ OBJC			=	$(SRCC:.c=.o)
 
 # COMMON
 
-NAME			=	Boids
+NAME			=	boids
 
 LDFLAGS			=	-ldl -lsfml-graphics -lsfml-window -lsfml-system -lsfml-audio -lGL
 

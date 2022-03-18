@@ -30,6 +30,7 @@
 *.exe
 *.out
 *.app
+boids
 
 build
 .vscode

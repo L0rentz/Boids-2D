@@ -28,7 +28,7 @@ target_compile_definitions(boids PRIVATE _CRT_SECURE_NO_WARNINGS)
 unset(CMAKE_IMPORT_LIBRARY_SUFFIX)
 
 add_custom_command(
-    TARGET boids POST_BUILD 
+    TARGET boids POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/SFML-2.5.1/bin/sfml-audio-2.dll" "${CMAKE_SOURCE_DIR}/build/debug/sfml-audio-2.dll"
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/SFML-2.5.1/bin/sfml-graphics-2.dll" "${CMAKE_SOURCE_DIR}/build/debug/sfml-graphics-2.dll"
     COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/SFML-2.5.1/bin/sfml-window-2.dll" "${CMAKE_SOURCE_DIR}/build/debug/sfml-window-2.dll"

@@ -22,8 +22,6 @@
     #define SHADER_PATH "src/"
 #endif
 
-#define BOIDS_COUNT 1000000
-
 class Core {
     public:
         Core();
@@ -37,20 +35,24 @@ class Core {
         void display();
         void update();
 
-        sf::RenderWindow _window;
+        sf::Window _window;
         sf::Event _event;
         Boid *_boids;
         float *_worldPosScaleAngleDeg;
         unsigned int _offset;
+        unsigned int _metadataSize;
         int _arraySize;
         std::map<int, std::vector<Boid *>> _hashTable;
         bool _running;
         sf::Clock _runTime;
+        double _lastTime;
+        double _currentTime;
+        int _framerate;
 
         // For OpenGL
 
         const char *getFileContent(const std::string &path) const;
-        void checkShaderCompileError(unsigned int shaderId);
+        void compileShader(unsigned int *shaderId, std::string filename, unsigned int type);
         void checkShaderProgramCompileError(unsigned int shaderProgramId);
         void openGlInit();
         void openGlDraw();

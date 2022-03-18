@@ -16,10 +16,12 @@ float Boid::vertices[vSize] = {
     -1.0f, -1.0f,  1.0f, 1.0f, 1.0f
 };
 
-void Boid::prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO)
+void Boid::prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO, float *worldPosScaleAngleDeg, unsigned int metadataSize)
 {
     std::size_t floatSize = sizeof(float);
     std::size_t vec4Size = sizeof(glm::vec4);
+    glBindBuffer(GL_ARRAY_BUFFER, instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, (vec4Size + floatSize) * BOIDS_COUNT, &worldPosScaleAngleDeg[metadataSize], GL_STREAM_DRAW);
     glBindBuffer(GL_ARRAY_BUFFER, VBO);
     glBufferData(GL_ARRAY_BUFFER, sizeof(Boid::vertices), Boid::vertices, GL_STATIC_DRAW);
     glBindVertexArray(VAO);

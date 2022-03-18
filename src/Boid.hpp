@@ -12,6 +12,8 @@
 
 #define WALLOFFSET -1.0
 
+#define BOIDS_COUNT 10000
+
 class Boid {
     public:
         Boid();
@@ -24,7 +26,7 @@ class Boid {
         const glm::vec2 &getScale() const;
         double getAngleDeg() const;
 
-        static void prepareDrawingBuffers(const unsigned int VAO, const unsigned int VBO, const unsigned int instanceVBO);
+        static void prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO, float *worldPosScaleAngleDeg, unsigned int metadataSize);
         static void clearDrawingBuffers(const unsigned int VAO);
 
         glm::vec2 _center;
