@@ -57,7 +57,7 @@ class Core {
         void openGlDraw();
 
         bool _wireframe;
-        unsigned int _VAO, _VBO, _instanceVBO, _flockingSSBO, _hashingSSBO;
+        unsigned int _VAO, _VBO, _instanceVBO, _SSBO;
         unsigned int _vertexFragProgram;
         unsigned int _computeProgramFlocking, _computeProgramHashing;
         unsigned int _vertexShader;
