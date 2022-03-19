@@ -13,8 +13,6 @@
 #include <time.h>
 #include <map>
 #include <fstream>
-#include <cstring>
-#include <thread>
 
 #ifdef _WIN32
     #define SHADER_PATH "../../src/"
@@ -36,21 +34,22 @@ class Core {
         void update();
 
         sf::Window _window;
+        int _framerate;
         sf::Event _event;
-        Boid *_boids;
-        float *_worldPosScaleAngleDeg;
-        unsigned int _offset;
-        unsigned int _metadataSize;
-        int _arraySize;
-        std::map<int, std::vector<Boid *>> _hashTable;
         bool _running;
         sf::Clock _runTime;
         double _lastTime;
         double _currentTime;
-        int _framerate;
+
+        Boid *_boids;
+        float *_worldPosScaleAngleDeg;
+        int _arraySize;
+        float *_hashTable;
+        int _tableSize;
+        unsigned int _offset;
+        unsigned int _metadataSize;
 
         // For OpenGL
-
         const char *getFileContent(const std::string &path) const;
         void compileShader(unsigned int *shaderId, std::string filename, unsigned int type);
         void checkShaderProgramCompileError(unsigned int shaderProgramId);
@@ -58,15 +57,13 @@ class Core {
         void openGlDraw();
 
         bool _wireframe;
-        unsigned int _VAO, _VBO, _instanceVBO, _SSBO;
+        unsigned int _VAO, _VBO, _instanceVBO, _flockingSSBO, _hashingSSBO;
         unsigned int _vertexFragProgram;
-        unsigned int _computeProgram;
+        unsigned int _computeProgramFlocking, _computeProgramHashing;
         unsigned int _vertexShader;
         unsigned int _computeShader;
         unsigned int _fragmentShader;
-        unsigned int _texture[2];
         glm::mat4 _projection;
-
 };
 
 #endif /* !CORE_HPP_ */

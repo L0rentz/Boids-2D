@@ -12,7 +12,8 @@
 
 #define WALLOFFSET -1.0
 
-#define BOIDS_COUNT 10000
+#define BOIDS_COUNT 10
+#define BUCKETS_COUNT 400
 
 class Boid {
     public:
@@ -46,8 +47,6 @@ class Boid {
 
         glm::mat4 _model;
         glm::vec2 _front;
-        // glm::vec2 _center;
-        // glm::vec2 _scale;
 
         // Algo
         std::vector<std::pair<Boid *, std::pair<float, unsigned int>>> _inRange;

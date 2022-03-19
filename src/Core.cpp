@@ -9,8 +9,9 @@ Core::Core()
     _window.create(sf::VideoMode(1920, 1080), "Boids simulation", sf::Style::Default, settings);
     _framerate = 60;
     // _window.setFramerateLimit(_framerate);
-
-    if(!gladLoadGL()) throw Exception("gladLoadGL failed");
+    _running = true;
+    _runTime.restart();
+    _lastTime = _runTime.getElapsedTime().asSeconds();
 
     _boids = new Boid[BOIDS_COUNT];
     for (int i = 0; i < BOIDS_COUNT; i++) {
@@ -20,31 +21,34 @@ Core::Core()
     }
 
     _offset = 5;
-    _metadataSize = 3;
-    _arraySize = BOIDS_COUNT * _offset + _metadataSize;
+    _metadataSize = 4;
+    _arraySize = BOIDS_COUNT * _offset * 2 + _metadataSize;
     _worldPosScaleAngleDeg = new float[_arraySize];
     _worldPosScaleAngleDeg[0] = static_cast<float>(BOIDS_COUNT);
     _worldPosScaleAngleDeg[1] = static_cast<float>(_window.getSize().x);
     _worldPosScaleAngleDeg[2] = static_cast<float>(_window.getSize().y);
-    for (unsigned int i = 0, offset = _metadataSize; i < BOIDS_COUNT; i++, offset += _offset) {
-        _worldPosScaleAngleDeg[0 + offset] = _boids[i]._center.x;
-        _worldPosScaleAngleDeg[1 + offset] = _boids[i]._center.y;
-        _worldPosScaleAngleDeg[2 + offset] = _boids[i]._scale.x;
-        _worldPosScaleAngleDeg[3 + offset] = _boids[i]._scale.y;
-        _worldPosScaleAngleDeg[4 + offset] = static_cast<float>(_boids[i]._angleDeg);
+    _worldPosScaleAngleDeg[3] = 0.0f; // bufferSelector
+    for (unsigned int j = 0, inc = _metadataSize; j < 2; j++) {
+        for (unsigned int i = 0; i < BOIDS_COUNT; i++, inc += _offset) {
+            _worldPosScaleAngleDeg[0 + inc] = _boids[i]._center.x;
+            _worldPosScaleAngleDeg[1 + inc] = _boids[i]._center.y;
+            _worldPosScaleAngleDeg[2 + inc] = _boids[i]._scale.x;
+            _worldPosScaleAngleDeg[3 + inc] = _boids[i]._scale.y;
+            _worldPosScaleAngleDeg[4 + inc] = static_cast<float>(_boids[i]._angleDeg);
+        }
     }
+    _tableSize = BUCKETS_COUNT * 2 + 1;
+    _hashTable = new float[_tableSize];
+    std::memset(_hashTable, 0, _tableSize);
+    _hashTable[0] = BUCKETS_COUNT;
 
     openGlInit();
-
-    _running = true;
-    _wireframe = false;
-    _runTime.restart();
-    _lastTime = _runTime.getElapsedTime().asSeconds();
 }
 
 Core::~Core()
 {
     delete[] _boids;
+    delete[] _hashTable;
 }
 
 const char *Core::getFileContent(const std::string& path) const
@@ -92,10 +96,14 @@ void Core::checkShaderProgramCompileError(unsigned int shaderProgramId)
 
 void Core::openGlInit()
 {
+    if(!gladLoadGL()) throw Exception("gladLoadGL failed");
+
+    _wireframe = false;
     glDisable(GL_BLEND);
     glDisable(GL_DEPTH);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
+    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
     compileShader(&_vertexShader, "boid.vs", GL_VERTEX_SHADER);
     compileShader(&_fragmentShader, "boid.fs", GL_FRAGMENT_SHADER);
@@ -107,16 +115,24 @@ void Core::openGlInit()
     glDeleteShader(_vertexShader);
     glDeleteShader(_fragmentShader);
 
-    compileShader(&_computeShader, "boid.comp", GL_COMPUTE_SHADER);
-    _computeProgram = glCreateProgram();
-    glAttachShader(_computeProgram, _computeShader);
-    glLinkProgram(_computeProgram);
-    checkShaderProgramCompileError(_computeProgram);
+    compileShader(&_computeShader, "boid_flocking.comp", GL_COMPUTE_SHADER);
+    _computeProgramFlocking = glCreateProgram();
+    glAttachShader(_computeProgramFlocking, _computeShader);
+    glLinkProgram(_computeProgramFlocking);
+    checkShaderProgramCompileError(_computeProgramFlocking);
+    glDeleteShader(_computeShader);
+
+    compileShader(&_computeShader, "boid_hashing.comp", GL_COMPUTE_SHADER);
+    _computeProgramHashing = glCreateProgram();
+    glAttachShader(_computeProgramHashing, _computeShader);
+    glLinkProgram(_computeProgramHashing);
+    checkShaderProgramCompileError(_computeProgramHashing);
     glDeleteShader(_computeShader);
 
     glGenBuffers(1, &_VBO);
     glGenBuffers(1, &_instanceVBO);
-    glGenBuffers(1, &_SSBO);
+    glGenBuffers(1, &_flockingSSBO);
+    glGenBuffers(1, &_hashingSSBO);
     glGenVertexArrays(1, &_VAO);
 
     _projection = glm::mat4(1.0f);
@@ -141,27 +157,40 @@ void Core::display()
 {
     static int firstIt = 0;
 
-    glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    glClear(GL_COLOR_BUFFER_BIT);
-
     _currentTime = _runTime.getElapsedTime().asSeconds();
     if (_currentTime - _lastTime >= 1.0f / _framerate) {
-        glUseProgram(_computeProgram);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _SSBO);
+        // glUseProgram(_computeProgramHashing);
+        //     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _flockingSSBO);
+        //     //     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _arraySize, &_worldPosScaleAngleDeg[0], GL_STREAM_DRAW);
+        //     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _hashingSSBO);
+        //         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _tableSize, &_hashTable[0], GL_STREAM_DRAW);
+        //         glDispatchCompute(static_cast<GLuint>(glm::ceil(BUCKETS_COUNT / 32.0f)), 1, 1);
+        //         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+        //         _hashTable = (float *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+        //         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+        //     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
+        //     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+        // glUseProgram(0);
+
+        glUseProgram(_computeProgramFlocking);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _flockingSSBO);
                 glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _arraySize, &_worldPosScaleAngleDeg[0], GL_STREAM_DRAW);
+            // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _hashingSSBO);
+            //     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _tableSize, &_hashTable[0], GL_STREAM_DRAW);
                 if (!firstIt) {
                     delete[] _worldPosScaleAngleDeg;
                     firstIt++;
                 }
-                glDispatchCompute(static_cast<GLuint>(glm::ceil(_arraySize / static_cast<float>(_offset) / 32.0f)), 1, 1);
+                glDispatchCompute(static_cast<GLuint>(glm::ceil(BOIDS_COUNT / static_cast<float>(_offset) / 32.0f)), 1, 1);
                 glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
                 _worldPosScaleAngleDeg = (float *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
         glUseProgram(0);
         _lastTime += 1.0f / _framerate;
     }
 
+    glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(_vertexFragProgram);
         glUniformMatrix4fv(glGetUniformLocation(_vertexFragProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
         Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO, _worldPosScaleAngleDeg, _metadataSize);
@@ -181,7 +210,7 @@ void Core::run()
         double currentTime = _runTime.getElapsedTime().asSeconds();
         nbFrames++;
         if (currentTime - lastTime >= 1.0) {
-            printf("%d fps\n", nbFrames);
+            std::cout << nbFrames << " fps" << std::endl;
             nbFrames = 0;
             lastTime += 1.0;
         }
@@ -189,6 +218,9 @@ void Core::run()
         display();
     }
 
-    glDeleteBuffers(1, &_SSBO);
+    glDeleteBuffers(1, &_VBO);
+    glDeleteBuffers(1, &_instanceVBO);
+    glDeleteBuffers(1, &_hashingSSBO);
+    glDeleteBuffers(1, &_flockingSSBO);
     _window.close();
 }
