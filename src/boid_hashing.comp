@@ -1,6 +1,6 @@
 #version 460 core
 
-#define BUCKETS_COUNT 900
+#define BUCKETS_COUNT 100
 
 layout (local_size_x = 32) in;
 
