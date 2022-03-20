@@ -12,7 +12,7 @@
 
 #define WALLOFFSET -1.0
 
-#define BOIDS_COUNT 1000
+#define BOIDS_COUNT 80000
 #define BUCKETS_COUNT 100 // Change in GLSL compute shader too !
 
 class Boid {
@@ -45,10 +45,6 @@ class Boid {
         // Spatial hashing
         static int _cellWidth;
         static int _gridWidth;
-
-
-
-
 
         int _id;
 
