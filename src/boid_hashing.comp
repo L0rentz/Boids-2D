@@ -1,15 +1,12 @@
 #version 460 core
 
+#define BUCKETS_COUNT 100
+
 layout (local_size_x = 32) in;
 
 struct s_hash {
     float size;
     float startIdx;
-};
-
-layout(std430, binding = 0) buffer sharedBufferHash {
-    float bucketsCount;
-    s_hash htable[];
 };
 
 struct s_boid {
@@ -18,9 +15,11 @@ struct s_boid {
     float scaleX;
     float scaleY;
     float angleDeg;
+    float hashKey;
 };
 
-layout(std430, binding = 1) buffer sharedBufferBoids {
+layout(std430, binding = 0) buffer sharedBufferBoids {
+    s_hash htable[BUCKETS_COUNT];
     float boidsCount;
     float windowWidth;
     float windowHeight;
@@ -30,8 +29,15 @@ layout(std430, binding = 1) buffer sharedBufferBoids {
 
 void main()
 {
-    if (gl_GlobalInvocationID.x >= bucketsCount) return;
+    if (gl_GlobalInvocationID.x >= BUCKETS_COUNT) return;
 
-    htable[gl_GlobalInvocationID.x].size = 5.0;
-    htable[gl_GlobalInvocationID.x].startIdx = 6.0;
+    int oldBoidsBuffer = bufferSelector == 2.0f ? 0 : int(boidsCount);
+    int newBoidsBuffer = bufferSelector == 2.0f ? int(boidsCount) : 0;
+
+    for (int i = 0, sortIdx = int(htable[gl_GlobalInvocationID.x].startIdx); i < boidsCount; i++, oldBoidsBuffer++) {
+        if (boids[oldBoidsBuffer].hashKey == gl_GlobalInvocationID.x) {
+            boids[newBoidsBuffer + sortIdx] = boids[oldBoidsBuffer];
+            sortIdx++;
+        }
+    }
 }

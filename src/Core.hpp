@@ -32,6 +32,7 @@ class Core {
         void events();
         void display();
         void update();
+        void updateHashtable();
 
         sf::Window _window;
         int _framerate;
@@ -42,12 +43,15 @@ class Core {
         double _currentTime;
 
         Boid *_boids;
-        float *_worldPosScaleAngleDeg;
-        int _arraySize;
-        float *_hashTable;
-        int _tableSize;
-        unsigned int _offset;
+        float *_sharedBuffer;
+        unsigned int _bufferSize;
+        unsigned int _tableSize;
+        unsigned int _worldPosScaleAngleDegSize;
+        unsigned int _worldPosScaleAngleDegIdx1;
+        unsigned int _worldPosScaleAngleDegIdx2; 
+        unsigned int _worldPosScaleAngleDegOffset;
         unsigned int _metadataSize;
+        unsigned int _bufferSelectorIdx;
 
         // For OpenGL
         const char *getFileContent(const std::string &path) const;

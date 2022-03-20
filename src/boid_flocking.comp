@@ -1,13 +1,12 @@
 #version 460 core
 
+#define BUCKETS_COUNT 100
+
 #define COHESION 100.0f
 #define SEPARATION 25.0f
 #define ALIGNMENT 75.0f
 
-#define BUCKETS_COUNT 400
-
 layout (local_size_x = 32) in;
-
 
 struct s_hash {
     float size;
@@ -20,10 +19,11 @@ struct s_boid {
     float scaleX;
     float scaleY;
     float angleDeg;
+    float hashKey;
 };
 
 layout(std430, binding = 0) buffer sharedBufferBoids {
-    s_hash htable[400];
+    s_hash htable[BUCKETS_COUNT];
     float boidsCount;
     float windowWidth;
     float windowHeight;
@@ -31,17 +31,17 @@ layout(std430, binding = 0) buffer sharedBufferBoids {
     s_boid boids[];
 };
 
-void checkBorder()
+void checkBorder(int boidsStartIdx)
 {
-    if (boids[gl_GlobalInvocationID.x].centerX > windowWidth)
-        boids[gl_GlobalInvocationID.x].centerX = 0;
-    if (boids[gl_GlobalInvocationID.x].centerX < 0)
-        boids[gl_GlobalInvocationID.x].centerX = windowWidth;
+    if (boids[boidsStartIdx + gl_GlobalInvocationID.x].centerX > windowWidth)
+        boids[boidsStartIdx + gl_GlobalInvocationID.x].centerX = 0;
+    if (boids[boidsStartIdx + gl_GlobalInvocationID.x].centerX < 0)
+        boids[boidsStartIdx + gl_GlobalInvocationID.x].centerX = windowWidth;
 
-    if (boids[gl_GlobalInvocationID.x].centerY > windowHeight)
-        boids[gl_GlobalInvocationID.x].centerY = 0;
-    if (boids[gl_GlobalInvocationID.x].centerY < 0)
-        boids[gl_GlobalInvocationID.x].centerY = windowHeight;
+    if (boids[boidsStartIdx + gl_GlobalInvocationID.x].centerY > windowHeight)
+        boids[boidsStartIdx + gl_GlobalInvocationID.x].centerY = 0;
+    if (boids[boidsStartIdx + gl_GlobalInvocationID.x].centerY < 0)
+        boids[boidsStartIdx + gl_GlobalInvocationID.x].centerY = windowHeight;
 }
 
 float magnitudeVec2(vec2 a, vec2 b)
@@ -53,9 +53,18 @@ void main()
 {
     if (gl_GlobalInvocationID.x >= boidsCount) return;
 
-    float maxRange = COHESION > ALIGNMENT ? COHESION > SEPARATION ? COHESION : SEPARATION : ALIGNMENT > SEPARATION ? ALIGNMENT : SEPARATION;
+    int startIdx = int(htable[int(boids[gl_GlobalInvocationID.x].hashKey)].startIdx);
+    if (bufferSelector == 2.0f) startIdx += int(boidsCount);
+    int max = startIdx + int(htable[int(boids[gl_GlobalInvocationID.x].hashKey)].size);
 
-    // if (magnitudeVec2(vec2(boids[i].centerX, boids[i].centerY), vec2(boids[gl_GlobalInvocationID.x].centerX, boids[gl_GlobalInvocationID.x].centerY)) < SEPARATION)
-    boids[gl_GlobalInvocationID.x].centerY += 2.0;
-    checkBorder();
+    // float maxRange = COHESION > ALIGNMENT ? COHESION > SEPARATION ? COHESION : SEPARATION : ALIGNMENT > SEPARATION ? ALIGNMENT : SEPARATION;
+
+    for (int i = startIdx; i < max; i++) {
+        if (i == gl_GlobalInvocationID.x) continue;
+        if (magnitudeVec2(vec2(boids[i].centerX, boids[i].centerY), vec2(boids[gl_GlobalInvocationID.x].centerX, boids[gl_GlobalInvocationID.x].centerY)) < SEPARATION) {
+            boids[i].centerY += 2.0;
+        }
+    }
+        
+    checkBorder(startIdx);
 }

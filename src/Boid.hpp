@@ -12,13 +12,13 @@
 
 #define WALLOFFSET -1.0
 
-#define BOIDS_COUNT 10
-#define BUCKETS_COUNT 400
+#define BOIDS_COUNT 1000
+#define BUCKETS_COUNT 100 // Change in GLSL compute shader too !
 
 class Boid {
     public:
         Boid();
-        Boid(const glm::vec2 position, const float gridSize, const int scale = 20, const int speed = 10, const int rotationSpeed = 5);
+        Boid(const glm::vec2 position, const float screenWidth, const int scale = 20, const int speed = 10, const int rotationSpeed = 5);
         ~Boid();
 
         void update(const sf::Vector2u windowSize, const std::map<int, std::vector<Boid *>> &hashtable, const std::vector<sf::FloatRect *> &obstacles);
@@ -27,19 +27,29 @@ class Boid {
         const glm::vec2 &getScale() const;
         double getAngleDeg() const;
 
-        static void prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO, float *worldPosScaleAngleDeg, unsigned int metadataSize);
+        static void prepareDrawingBuffers(unsigned int VAO, unsigned int VBO, unsigned int instanceVBO, float *worldPosScaleAngleDeg);
         static void clearDrawingBuffers(const unsigned int VAO);
+        static void updateHashtable(float *hashtable, unsigned int tableSize, float *worldPosScaleAngleDeg, unsigned int worldPosScaleAngleDegOffset, float *bufferSelector);
 
-        glm::vec2 _center;
-        glm::vec2 _scale;
-        double _angleDeg;
+        glm::vec2 center;
+        glm::vec2 scale;
+        double angleDeg;
 
     protected:
-        static const unsigned int vSize;
-        static float vertices[];
-        static int nextID;
-
     private:
+        static const unsigned int _vSize;
+        static float _vertices[];
+        static int _nextID;
+        static float _screenWidth;
+
+        // Spatial hashing
+        static int _cellWidth;
+        static int _gridWidth;
+
+
+
+
+
         int _id;
 
         Utils utils;

@@ -17,30 +17,33 @@ Core::Core()
     for (int i = 0; i < BOIDS_COUNT; i++) {
         int x = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2));
         int y = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2));
-        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 1, 4, 4);
+        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 4, 4, 4);
     }
 
-    _offset = 5;
+    _tableSize = BUCKETS_COUNT * 2;
     _metadataSize = 4;
-    _arraySize = BOIDS_COUNT * _offset * 2 + _metadataSize;
-    _worldPosScaleAngleDeg = new float[_arraySize];
-    _worldPosScaleAngleDeg[0] = static_cast<float>(BOIDS_COUNT);
-    _worldPosScaleAngleDeg[1] = static_cast<float>(_window.getSize().x);
-    _worldPosScaleAngleDeg[2] = static_cast<float>(_window.getSize().y);
-    _worldPosScaleAngleDeg[3] = 0.0f; // bufferSelector
-    for (unsigned int j = 0, inc = _metadataSize; j < 2; j++) {
-        for (unsigned int i = 0; i < BOIDS_COUNT; i++, inc += _offset) {
-            _worldPosScaleAngleDeg[0 + inc] = _boids[i]._center.x;
-            _worldPosScaleAngleDeg[1 + inc] = _boids[i]._center.y;
-            _worldPosScaleAngleDeg[2 + inc] = _boids[i]._scale.x;
-            _worldPosScaleAngleDeg[3 + inc] = _boids[i]._scale.y;
-            _worldPosScaleAngleDeg[4 + inc] = static_cast<float>(_boids[i]._angleDeg);
+    _worldPosScaleAngleDegOffset = 6;
+    _worldPosScaleAngleDegSize = BOIDS_COUNT * _worldPosScaleAngleDegOffset;
+    _worldPosScaleAngleDegIdx1 = _tableSize + _metadataSize;
+    _worldPosScaleAngleDegIdx2 = _tableSize + _metadataSize + _worldPosScaleAngleDegSize;
+    _bufferSize = _tableSize + _metadataSize + _worldPosScaleAngleDegSize * 2;
+    _sharedBuffer = new float[_bufferSize];
+    std::memset(_sharedBuffer, 0, _bufferSize * sizeof(float));
+    _sharedBuffer[_tableSize] = static_cast<float>(BOIDS_COUNT);
+    _sharedBuffer[_tableSize + 1] = static_cast<float>(_window.getSize().x);
+    _sharedBuffer[_tableSize + 2] = static_cast<float>(_window.getSize().y);
+    _bufferSelectorIdx = _tableSize + 3;
+    _sharedBuffer[_bufferSelectorIdx] = 1.0f;
+    for (unsigned int j = 0, inc = _tableSize + _metadataSize; j < 2; j++) {
+        for (unsigned int i = 0; i < BOIDS_COUNT; i++, inc += _worldPosScaleAngleDegOffset) {
+            _sharedBuffer[inc] = _boids[i].center.x;
+            _sharedBuffer[inc + 1] = _boids[i].center.y;
+            _sharedBuffer[inc + 2] = _boids[i].scale.x;
+            _sharedBuffer[inc + 3] = _boids[i].scale.y;
+            _sharedBuffer[inc + 4] = static_cast<float>(_boids[i].angleDeg);
+            _sharedBuffer[inc + 5] = 0.0f; // hashKey
         }
     }
-    _tableSize = BUCKETS_COUNT * 2 + 1;
-    _hashTable = new float[_tableSize];
-    std::memset(_hashTable, 0, _tableSize);
-    _hashTable[0] = BUCKETS_COUNT;
 
     openGlInit();
 }
@@ -48,7 +51,6 @@ Core::Core()
 Core::~Core()
 {
     delete[] _boids;
-    delete[] _hashTable;
 }
 
 const char *Core::getFileContent(const std::string& path) const
@@ -131,8 +133,7 @@ void Core::openGlInit()
 
     glGenBuffers(1, &_VBO);
     glGenBuffers(1, &_instanceVBO);
-    glGenBuffers(1, &_flockingSSBO);
-    glGenBuffers(1, &_hashingSSBO);
+    glGenBuffers(1, &_SSBO);
     glGenVertexArrays(1, &_VAO);
 
     _projection = glm::mat4(1.0f);
@@ -159,33 +160,31 @@ void Core::display()
 
     _currentTime = _runTime.getElapsedTime().asSeconds();
     if (_currentTime - _lastTime >= 1.0f / _framerate) {
-        // glUseProgram(_computeProgramHashing);
-        //     // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _flockingSSBO);
-        //     //     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _arraySize, &_worldPosScaleAngleDeg[0], GL_STREAM_DRAW);
-        //     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _hashingSSBO);
-        //         glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _tableSize, &_hashTable[0], GL_STREAM_DRAW);
-        //         glDispatchCompute(static_cast<GLuint>(glm::ceil(BUCKETS_COUNT / 32.0f)), 1, 1);
-        //         glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-        //         _hashTable = (float *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
-        //         glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-        //     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
-        //     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
-        // glUseProgram(0);
+        Boid::updateHashtable(_sharedBuffer, _tableSize, _sharedBuffer[_bufferSelectorIdx] == 1.0f ? &_sharedBuffer[_worldPosScaleAngleDegIdx1] : &_sharedBuffer[_worldPosScaleAngleDegIdx2], _worldPosScaleAngleDegOffset, &_sharedBuffer[_bufferSelectorIdx]);
 
-        glUseProgram(_computeProgramFlocking);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, _flockingSSBO);
-                glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _arraySize, &_worldPosScaleAngleDeg[0], GL_STREAM_DRAW);
-            // glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _hashingSSBO);
-            //     glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _tableSize, &_hashTable[0], GL_STREAM_DRAW);
+        glUseProgram(_computeProgramHashing);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _SSBO);
+                glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _bufferSize, &_sharedBuffer[0], GL_STREAM_DRAW);
                 if (!firstIt) {
-                    delete[] _worldPosScaleAngleDeg;
+                    delete[] _sharedBuffer;
                     firstIt++;
                 }
-                glDispatchCompute(static_cast<GLuint>(glm::ceil(BOIDS_COUNT / static_cast<float>(_offset) / 32.0f)), 1, 1);
+                glDispatchCompute(static_cast<GLuint>(glm::ceil(BUCKETS_COUNT / 32.0f)), 1, 1);
                 glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
-                _worldPosScaleAngleDeg = (float *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+                _sharedBuffer = (float *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
                 glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
-            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, 0);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
+        glUseProgram(0);
+
+
+        glUseProgram(_computeProgramFlocking);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, _SSBO);
+                glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float) * _bufferSize, &_sharedBuffer[0], GL_STREAM_DRAW);
+                glDispatchCompute(static_cast<GLuint>(glm::ceil(BOIDS_COUNT / 32.0f)), 1, 1);
+                glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT);
+                _sharedBuffer = (float *)glMapBuffer(GL_SHADER_STORAGE_BUFFER, GL_READ_ONLY);
+                glUnmapBuffer(GL_SHADER_STORAGE_BUFFER);
+            glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
         glUseProgram(0);
         _lastTime += 1.0f / _framerate;
     }
@@ -193,7 +192,7 @@ void Core::display()
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(_vertexFragProgram);
         glUniformMatrix4fv(glGetUniformLocation(_vertexFragProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
-        Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO, _worldPosScaleAngleDeg, _metadataSize);
+        Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO, _sharedBuffer[_bufferSelectorIdx] == 1.0f ? &_sharedBuffer[_worldPosScaleAngleDegIdx2] : &_sharedBuffer[_worldPosScaleAngleDegIdx1]);
         glDrawArraysInstanced(GL_TRIANGLES, 0, 3, BOIDS_COUNT);
         Boid::clearDrawingBuffers(_VAO);
     glUseProgram(0);
@@ -220,7 +219,7 @@ void Core::run()
 
     glDeleteBuffers(1, &_VBO);
     glDeleteBuffers(1, &_instanceVBO);
-    glDeleteBuffers(1, &_hashingSSBO);
-    glDeleteBuffers(1, &_flockingSSBO);
+    glDeleteBuffers(1, &_SSBO);
+
     _window.close();
 }
