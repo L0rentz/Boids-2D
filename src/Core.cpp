@@ -17,7 +17,7 @@ Core::Core()
     for (int i = 0; i < BOIDS_COUNT; i++) {
         int x = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2));
         int y = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2));
-        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 2, 4, 4);
+        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 5, 4, 4);
     }
 
     _tableSize = BUCKETS_COUNT * 2;
@@ -101,7 +101,8 @@ void Core::openGlInit()
     if(!gladLoadGL()) throw Exception("gladLoadGL failed");
 
     _wireframe = false;
-    glDisable(GL_BLEND);
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDisable(GL_DEPTH);
     glEnable(GL_CULL_FACE);
     glCullFace(GL_BACK);
@@ -187,15 +188,16 @@ void Core::display()
             glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, 0);
         glUseProgram(0);
         _lastTime += 1.0f / _framerate;
+
+        glClear(GL_COLOR_BUFFER_BIT);
+        glUseProgram(_vertexFragProgram);
+            glUniformMatrix4fv(glGetUniformLocation(_vertexFragProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
+            Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO, _sharedBuffer[_bufferSelectorIdx] == 1.0f ? &_sharedBuffer[_worldPosScaleAngleDegIdx2] : &_sharedBuffer[_worldPosScaleAngleDegIdx1]);
+            glDrawArraysInstanced(GL_TRIANGLES, 0, 3, BOIDS_COUNT);
+            Boid::clearDrawingBuffers(_VAO);
+        glUseProgram(0);
     }
 
-    glClear(GL_COLOR_BUFFER_BIT);
-    glUseProgram(_vertexFragProgram);
-        glUniformMatrix4fv(glGetUniformLocation(_vertexFragProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
-        Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO, _sharedBuffer[_bufferSelectorIdx] == 1.0f ? &_sharedBuffer[_worldPosScaleAngleDegIdx2] : &_sharedBuffer[_worldPosScaleAngleDegIdx1]);
-        glDrawArraysInstanced(GL_TRIANGLES, 0, 3, BOIDS_COUNT);
-        Boid::clearDrawingBuffers(_VAO);
-    glUseProgram(0);
 
     _window.display();
 }
