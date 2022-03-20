@@ -56,6 +56,7 @@ void Boid::updateHashtable(float *hashtable, unsigned int tableSize, float *worl
     for (unsigned int i = 0; i < BOIDS_COUNT * worldPosScaleAngleDegOffset; i += worldPosScaleAngleDegOffset) {
         int hashKey = static_cast<int>(std::floor(worldPosScaleAngleDeg[i] / _cellWidth) + std::floor(worldPosScaleAngleDeg[i + 1] / _cellWidth) * _gridWidth);
         worldPosScaleAngleDeg[i + worldPosScaleAngleDegOffset - 1] = static_cast<float>(hashKey);
+        if (hashKey < 0 || hashKey > BUCKETS_COUNT) continue;
         hashtable[hashKey * 2]++;
     }
     for (unsigned int i = 0, totalBoids = 0; i < tableSize; i += 2) {
@@ -105,7 +106,6 @@ Boid::Boid(const glm::vec2 position, const float screenWidth, const int size, co
     _screenWidth = screenWidth;
     _gridWidth = static_cast<int>(glm::sqrt(BUCKETS_COUNT));
     _cellWidth = static_cast<int>(_screenWidth / _gridWidth);
-    updateGridID();
 }
 
 Boid::~Boid()
