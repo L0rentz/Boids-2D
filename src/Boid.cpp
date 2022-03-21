@@ -86,7 +86,7 @@ Boid::Boid(const glm::vec2 position, const float screenWidth, const int size, co
     scale = glm::vec2{_diameter, _diameter};
 
     center = glm::vec3{position.x, position.y, 0.0f};
-     glm::vec2 front = glm::vec2{center.x, center.y - _diameter};
+    glm::vec2 front = glm::vec2{center.x, center.y - _diameter};
     if (_id == 0) {
         setVerticeModel(front.x, front.y, 0);
         setVerticeModel(center.x - _radius, center.y + _diameter, 5);
