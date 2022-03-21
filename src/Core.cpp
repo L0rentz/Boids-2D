@@ -187,7 +187,7 @@ void Core::display()
     glClear(GL_COLOR_BUFFER_BIT);
     glUseProgram(_vertexFragProgram);
         glUniformMatrix4fv(glGetUniformLocation(_vertexFragProgram, "projection"), 1, GL_FALSE, glm::value_ptr(_projection));
-        Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO, _sharedBuffer[_bufferSelectorIdx] == 1.0f ? &_sharedBuffer[_worldPosScaleAngleDegIdx2] : &_sharedBuffer[_worldPosScaleAngleDegIdx1]);
+        Boid::prepareDrawingBuffers(_VAO, _VBO, _instanceVBO, _sharedBuffer[_bufferSelectorIdx] == 2.0f ? &_sharedBuffer[_worldPosScaleAngleDegIdx2] : &_sharedBuffer[_worldPosScaleAngleDegIdx1]);
         glDrawArraysInstanced(GL_TRIANGLES, 0, 3, BOIDS_COUNT);
         Boid::clearDrawingBuffers(_VAO);
     glUseProgram(0);

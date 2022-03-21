@@ -13,7 +13,7 @@
 #define WALLOFFSET -1.0
 
 #define BOIDS_COUNT 100
-#define BUCKETS_COUNT 100 // Change in GLSL compute shader too !
+#define BUCKETS_COUNT 4 // Change in GLSL compute shader too !
 
 class Boid {
     public:

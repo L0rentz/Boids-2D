@@ -55,8 +55,11 @@ void Boid::updateHashtable(float *hashtable, unsigned int tableSize, float *worl
     std::memset(hashtable, 0, tableSize * sizeof(float));
     for (unsigned int i = 0; i < BOIDS_COUNT * worldPosScaleAngleDegOffset; i += worldPosScaleAngleDegOffset) {
         int hashKey = static_cast<int>(std::floor(worldPosScaleAngleDeg[i] / _cellWidth) + std::floor(worldPosScaleAngleDeg[i + 1] / _cellWidth) * _gridWidth);
+        if (hashKey < 0 || hashKey >= BUCKETS_COUNT) {
+            hashtable[static_cast<int>(worldPosScaleAngleDeg[i + worldPosScaleAngleDegOffset - 1]) * 2]++;
+            continue;
+        }
         worldPosScaleAngleDeg[i + worldPosScaleAngleDegOffset - 1] = static_cast<float>(hashKey);
-        if (hashKey < 0 || hashKey > BUCKETS_COUNT) continue;
         hashtable[hashKey * 2]++;
     }
     for (unsigned int i = 0, totalBoids = 0; i < tableSize; i += 2) {

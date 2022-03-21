@@ -1,6 +1,6 @@
 #version 460 core
 
-#define BUCKETS_COUNT 100
+#define BUCKETS_COUNT 4
 #define GRID_WIDTH sqrt(BUCKETS_COUNT)
 
 #define PI 3.1415926538
@@ -85,7 +85,7 @@ vec2 normalizeVec2(const vec2 a, const vec2 b)
 
 int mappedRadToDeg(float rad)
 {
-    float deg = rad * (180.0 / PI);
+    float deg = rad * 180.0 / PI;
     return int(deg + 360) % 360;
 }
 
@@ -101,11 +101,13 @@ void processRotation(const vec2 point, vec2 thisBoidCenter, vec2 thisBoidDirecti
     int mappedBoidDegrees = mappedRadToDeg(angleBoid);
     int degreesDif = mappedDirectionDegrees - mappedBoidDegrees;
 
-    if (abs(degreesDif) <= ROTATION_SPEED * 5) return;
-    int tmpRotationSpeed = ROTATION_SPEED * -1;
+    if (abs(degreesDif) <= ROTATION_SPEED) return;
+    int tmpRotationSpeed = ROTATION_SPEED;
     if (mappedDirectionDegrees < mappedBoidDegrees && mappedBoidDegrees - mappedDirectionDegrees <= 180) tmpRotationSpeed *= -1;
     if (mappedDirectionDegrees > mappedBoidDegrees && mappedDirectionDegrees- mappedBoidDegrees > 180) tmpRotationSpeed *= -1;
-    boids[thisBoid].angleDeg += tmpRotationSpeed;
+
+    float test = atan(normalizedBoidDirection.x, normalizedBoidDirection.y);
+    boids[thisBoid].angleDeg = mappedRadToDeg(test);
 }
 
 void main()
@@ -125,22 +127,22 @@ void main()
     boids[thisBoid].centerX += directionVec.x;
     boids[thisBoid].centerY += directionVec.y;
 
-    // vec2 separationVec = vec2(0, 0);
-    // int sepCount = 0;
-    // vec2 cohesionVec = vec2(0, 0);
-    // vec2 alignementVec = vec2(0, 0);
+    vec2 separationVec = vec2(0, 0);
+    int sepCount = 0;
+    vec2 cohesionVec = vec2(0, 0);
+    vec2 alignementVec = vec2(0, 0);
 
-    // for (int i = startIdx; i < maxIdx; i++) {
-    //     if (i == thisBoid) continue;
-    //     if (magnitudeVec2(vec2(boids[i].centerX, boids[i].centerY), vec2(boids[thisBoid].centerX, boids[thisBoid].centerY)) < SEPARATION) {
-    //         separationVec += vec2(boids[i].centerX, boids[i].centerY);
-    //         sepCount++;
-    //     }
-    // }
-    // separationVec.x = (separationVec.x / sepCount - boids[thisBoid].centerX) * -1 + boids[thisBoid].centerX;
-    // separationVec.y = (separationVec.y / sepCount - boids[thisBoid].centerY) * -1 + boids[thisBoid].centerY;
-    // if (length(separationVec) > 0)
-    //     processRotation(separationVec, vec2(boids[thisBoid].centerX, boids[thisBoid].centerY), directionVec, thisBoid);
+    for (int i = startIdx; i < maxIdx; i++) {
+        if (i == thisBoid) continue;
+        if (magnitudeVec2(vec2(boids[i].centerX, boids[i].centerY), vec2(boids[thisBoid].centerX, boids[thisBoid].centerY)) < SEPARATION) {
+            separationVec += vec2(boids[i].centerX, boids[i].centerY);
+            sepCount++;
+        }
+    }
+    separationVec.x = (separationVec.x / sepCount - boids[thisBoid].centerX) * -1 + boids[thisBoid].centerX;
+    separationVec.y = (separationVec.y / sepCount - boids[thisBoid].centerY) * -1 + boids[thisBoid].centerY;
+    if (length(separationVec) > 0)
+        processRotation(separationVec, vec2(boids[thisBoid].centerX, boids[thisBoid].centerY), directionVec, thisBoid);
 
     checkBorder(startIdx);
 }
