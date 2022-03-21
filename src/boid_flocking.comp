@@ -6,8 +6,8 @@
 #define PI 3.1415926538
 
 #define COHESION 40.0f
-#define ALIGNMENT 20.0f
-#define SEPARATION 5.0f
+#define ALIGNMENT 30.0f
+#define SEPARATION 2.0f
 #define FOV 260
 #define ROTATION_SPEED 4
 #define SPEED 4
