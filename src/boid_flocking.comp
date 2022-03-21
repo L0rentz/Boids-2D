@@ -1,16 +1,16 @@
 #version 460 core
 
-#define BUCKETS_COUNT 4
+#define BUCKETS_COUNT 100
 #define GRID_WIDTH sqrt(BUCKETS_COUNT)
 
 #define PI 3.1415926538
 
-#define COHESION 100.0f
-#define ALIGNMENT 75.0f
-#define SEPARATION 100.0f
+#define COHESION 40.0f
+#define ALIGNMENT 20.0f
+#define SEPARATION 5.0f
 #define FOV 260
 #define ROTATION_SPEED 4
-#define SPEED 1
+#define SPEED 4
 
 
 layout (local_size_x = 32) in;
@@ -74,8 +74,7 @@ vec2 getBoidDirection(const float angleDeg, const float len) {
 vec2 normalizeVec2(const vec2 a, const vec2 b)
 {
     float magnitude = magnitudeVec2(a, b);
-    vec2 direction = vec2(a.x - b.x, a.y - b.y);
-    vec2 normalize = direction;
+    vec2 normalize = vec2(a.x - b.x, a.y - b.y);
 
     normalize.x /= magnitude;
     normalize.y /= magnitude;
@@ -89,25 +88,34 @@ int mappedRadToDeg(float rad)
     return int(deg + 360) % 360;
 }
 
-void processRotation(const vec2 point, vec2 thisBoidCenter, vec2 thisBoidDirection, int thisBoid)
+int mappedDegrees(int deg)
 {
-    vec2 normalizedDirection = normalizeVec2(thisBoidCenter, point);
-    vec2 normalizedBoidDirection = normalizeVec2(thisBoidCenter, thisBoidDirection);
+    return int(deg + 360) % 360;
+}
 
-    float angleDirection = atan(normalizedDirection.x, normalizedDirection.y);
-    float angleBoid = atan(normalizedBoidDirection.x, normalizedBoidDirection.y);
-
-    int mappedDirectionDegrees = mappedRadToDeg(angleDirection);
-    int mappedBoidDegrees = mappedRadToDeg(angleBoid);
-    int degreesDif = mappedDirectionDegrees - mappedBoidDegrees;
+void processRotation(int resultAngle, int thisBoidAngle, int thisBoid)
+{
+    int degreesDif = resultAngle - thisBoidAngle;
 
     if (abs(degreesDif) <= ROTATION_SPEED) return;
     int tmpRotationSpeed = ROTATION_SPEED;
-    if (mappedDirectionDegrees < mappedBoidDegrees && mappedBoidDegrees - mappedDirectionDegrees <= 180) tmpRotationSpeed *= -1;
-    if (mappedDirectionDegrees > mappedBoidDegrees && mappedDirectionDegrees- mappedBoidDegrees > 180) tmpRotationSpeed *= -1;
+    if (resultAngle < thisBoidAngle && thisBoidAngle - resultAngle <= 180) tmpRotationSpeed *= -1;
+    if (resultAngle > thisBoidAngle && resultAngle- thisBoidAngle > 180) tmpRotationSpeed *= -1;
 
-    float test = atan(normalizedBoidDirection.x, normalizedBoidDirection.y);
-    boids[thisBoid].angleDeg = mappedRadToDeg(test);
+    // boids[thisBoid].angleDeg = resultAngle;
+    boids[thisBoid].angleDeg += tmpRotationSpeed;
+}
+
+int findClosestInRangeAngle(float range, int sepCount, int cohCount, int aliCount, vec2 separationVec, vec2 cohesionVec, vec2 alignementVec)
+{
+    if (sepCount != 0 && SEPARATION == range) {
+        return int(360 + atan(separationVec.x, separationVec.y) * (180 / PI)) % 360;
+    } else if (cohCount != 0 && COHESION == range) {
+        return int(360 + atan(cohesionVec.x, cohesionVec.y) * (180 / PI)) % 360;
+    } else if (aliCount != 0 && ALIGNMENT == range) {
+        return int(360 + atan(alignementVec.x, alignementVec.y) * (180 / PI)) % 360;
+    }
+    return 0;
 }
 
 void main()
@@ -122,27 +130,66 @@ void main()
     int maxIdx = startIdx + int(htable[int(boids[gl_GlobalInvocationID.x].hashKey)].size);
 
     float maxRange = COHESION > ALIGNMENT ? COHESION > SEPARATION ? COHESION : SEPARATION : ALIGNMENT > SEPARATION ? ALIGNMENT : SEPARATION;
+    float minRange = COHESION < ALIGNMENT ? COHESION < SEPARATION ? COHESION : SEPARATION : ALIGNMENT < SEPARATION ? ALIGNMENT : SEPARATION;
+    float midRange = 0.0f;
+    if (COHESION != maxRange && COHESION != minRange) midRange = COHESION;
+    else if (ALIGNMENT != maxRange && ALIGNMENT != minRange) midRange = ALIGNMENT;
+    else midRange = SEPARATION;
+
+    vec2 separationVec = vec2(0, 0);
+    int sepCount = 0;
+    vec2 cohesionVec = vec2(0, 0);
+    int cohCount = 0;
+    vec2 alignementVec = vec2(0, 0);
+    int aliCount = 0;
+
+    float magnitude = 0.0f;
+    for (int i = startIdx; i < maxIdx; i++) {
+        if (i == thisBoid) continue;
+        magnitude = magnitudeVec2(vec2(boids[i].centerX, boids[i].centerY), vec2(boids[thisBoid].centerX, boids[thisBoid].centerY));
+        if (mappedDegrees(int(boids[i].angleDeg)) - mappedDegrees(int(boids[thisBoid].angleDeg)) > FOV / 2 && mappedDegrees(int(boids[i].angleDeg)) - mappedDegrees(int(boids[thisBoid].angleDeg)) < 360 - FOV / 2) continue;
+        if (magnitude < SEPARATION) {
+            separationVec.x += boids[i].centerX;
+            separationVec.y += boids[i].centerY;
+            sepCount++;
+        }
+        if (magnitude < COHESION) {
+            cohesionVec.x += boids[i].centerX;
+            cohesionVec.y += boids[i].centerY;
+            cohCount++;
+        }
+        if (magnitude < ALIGNMENT) {
+            alignementVec += getBoidDirection(boids[i].angleDeg, SPEED);
+            aliCount++;
+        }
+    }
+    if (sepCount != 0) {
+        separationVec.x = (separationVec.x / sepCount - boids[thisBoid].centerX);
+        separationVec.y = (separationVec.y / sepCount - boids[thisBoid].centerY);
+        separationVec.x *= -1;
+    }
+    if (cohCount != 0) {
+        cohesionVec.x = (cohesionVec.x / cohCount - boids[thisBoid].centerX);
+        cohesionVec.y = (cohesionVec.y / cohCount - boids[thisBoid].centerY);
+        cohesionVec.y *= -1;
+    }
+    if (aliCount != 0) {
+        alignementVec.x /= aliCount;
+        alignementVec.y /= aliCount;
+        alignementVec.y *= -1;
+    }
+
+    int resultInDegrees = findClosestInRangeAngle(minRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+    if (resultInDegrees == 0)
+        resultInDegrees = findClosestInRangeAngle(midRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+    if (resultInDegrees == 0)
+       resultInDegrees = findClosestInRangeAngle(maxRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+    if (resultInDegrees != 0)
+        processRotation(resultInDegrees, mappedDegrees(int(boids[thisBoid].angleDeg)), thisBoid);
 
     vec2 directionVec = getBoidDirection(boids[thisBoid].angleDeg, SPEED);
     boids[thisBoid].centerX += directionVec.x;
     boids[thisBoid].centerY += directionVec.y;
 
-    vec2 separationVec = vec2(0, 0);
-    int sepCount = 0;
-    vec2 cohesionVec = vec2(0, 0);
-    vec2 alignementVec = vec2(0, 0);
-
-    for (int i = startIdx; i < maxIdx; i++) {
-        if (i == thisBoid) continue;
-        if (magnitudeVec2(vec2(boids[i].centerX, boids[i].centerY), vec2(boids[thisBoid].centerX, boids[thisBoid].centerY)) < SEPARATION) {
-            separationVec += vec2(boids[i].centerX, boids[i].centerY);
-            sepCount++;
-        }
-    }
-    separationVec.x = (separationVec.x / sepCount - boids[thisBoid].centerX) * -1 + boids[thisBoid].centerX;
-    separationVec.y = (separationVec.y / sepCount - boids[thisBoid].centerY) * -1 + boids[thisBoid].centerY;
-    if (length(separationVec) > 0)
-        processRotation(separationVec, vec2(boids[thisBoid].centerX, boids[thisBoid].centerY), directionVec, thisBoid);
-
-    checkBorder(startIdx);
+    checkBorder(thisBoid);
 }

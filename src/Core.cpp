@@ -17,7 +17,7 @@ Core::Core()
     for (int i = 0; i < BOIDS_COUNT; i++) {
         int x = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().x - WALLOFFSET * 2));
         int y = static_cast<int>(WALLOFFSET + rand() % static_cast<int>(_window.getSize().y - WALLOFFSET * 2));
-        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 10, 4, 4);
+        _boids[i] = Boid(glm::vec2{x, y}, static_cast<float>(_window.getSize().x), 4, 4, 4);
     }
 
     _tableSize = BUCKETS_COUNT * 2;
