@@ -12,7 +12,6 @@
 #define ROTATION_SPEED 4
 #define SPEED 4
 
-
 layout (local_size_x = 32) in;
 
 struct s_hash {
@@ -102,7 +101,6 @@ void processRotation(int resultAngle, int thisBoidAngle, int thisBoid)
     if (resultAngle < thisBoidAngle && thisBoidAngle - resultAngle <= 180) tmpRotationSpeed *= -1;
     if (resultAngle > thisBoidAngle && resultAngle- thisBoidAngle > 180) tmpRotationSpeed *= -1;
 
-    // boids[thisBoid].angleDeg = resultAngle;
     boids[thisBoid].angleDeg += tmpRotationSpeed;
 }
 

@@ -21,8 +21,6 @@ class Boid {
         Boid(const glm::vec2 position, const float screenWidth, const int scale = 20, const int speed = 10, const int rotationSpeed = 5);
         ~Boid();
 
-        void update(const sf::Vector2u windowSize, const std::map<int, std::vector<Boid *>> &hashtable, const std::vector<sf::FloatRect *> &obstacles);
-        int getGridID() const;
         const glm::vec2 &getWorldPosition() const;
         const glm::vec2 &getScale() const;
         double getAngleDeg() const;
@@ -39,54 +37,16 @@ class Boid {
     private:
         static const unsigned int _vSize;
         static float _vertices[];
-        static int _nextID;
         static float _screenWidth;
+        static int _nextID;
 
-        // Spatial hashing
         static int _cellWidth;
         static int _gridWidth;
-
-        int _id;
-
-        Utils utils;
-        glm::vec2 _debugPos;
-
-        glm::mat4 _model;
-        glm::vec2 _front;
-
-        // Algo
-        std::vector<std::pair<Boid *, std::pair<float, unsigned int>>> _inRange;
         int _diameter;
         int _radius;
-        int _rotationSpeed;
-        int _speed;
-        unsigned int _fov;
-        float _cohesionRange;
-        float _alignmentRange;
-        float _separationRange;
-        float _maxRange;
-        int _fleet;
-        // double _angleDeg;
+        int _id;
 
-        // Spatial hashing
-        int _gridCell;
-        int _cellSize;
-        int _width;
-        int _buckets;
-
-        bool wallAvoidance(sf::Vector2u windowSize, const std::vector<sf::FloatRect *> &obstacles);
-        void rotateBoidTowardPoint(const glm::vec2 point, const glm::vec2 center, const glm::vec2 front);
-        void updatePos(sf::Vector2u windowSize);
-        void checkBorder(sf::Vector2u windowSize);
-        void move(const glm::vec2 translation);
-        bool separation();
-        bool cohesion();
-        bool alignment();
-        void findInRange(const std::map<int, std::vector<Boid *>> &hashtable);
-        bool processRotation(const glm::vec2 point);
-        void updateGridID();
         void setVerticeModel(float x, float y, unsigned int i);
-        void setPosition(const glm::vec2 position);
 };
 
 #endif /* !BOID_HPP_ */
