@@ -71,14 +71,17 @@ vec2 getBoidDirection(const float angleDeg, const float len) {
 //     }
 // }
 
-bool ccw(vec2 A, vec2 B, vec2 C)
-{
-    return (C.y - A.y) * (B.x - A.x) > (B.y - A.y) * (C.x - A.x);
-}
-
-bool intersect(vec2 A, vec2 B, vec2 C, vec2 D) {
-    return ccw(A, C, D) != ccw(B, C, D) && ccw(A, B, C) != ccw(A, B, D);
-}
+bool intersects(vec2 A, vec2 B, vec2 C, vec2 D) {
+    float det, gamma, lambda;
+    det = (B.x - A.x) * (D.y - C.y) - (D.x - C.x) * (B.y - A.y);
+    if (det == 0)
+        return false;
+    else {
+        lambda = ((D.y - C.y) * (D.x - A.x) + (C.x - D.x) * (D.y - A.y)) / det;
+        gamma = ((A.y - B.y) * (D.x - A.x) + (B.x - A.x) * (D.y - A.y)) / det;
+        return (0 < lambda && lambda < 1) && (0 < gamma && gamma < 1);
+    }
+};
 
 vec2 normalizeVec2(const vec2 a, const vec2 b)
 {
@@ -91,7 +94,7 @@ vec2 normalizeVec2(const vec2 a, const vec2 b)
     return normalize;
 }
 
-vec2 rotatePointAroundCenter(vec2 point, const vec2 center, const int angleDeg)
+vec2 rotatePointAroundCenter(vec2 point, const vec2 center, const float angleDeg)
 {
     float angleRad = angleDeg * PI / 180;
 
@@ -112,17 +115,18 @@ vec2 rotatePointAroundCenter(vec2 point, const vec2 center, const int angleDeg)
 
 bool raycast(vec2 directionVec, int thisBoid)
 {
-    vec4 walls[4];
-    walls[0] = vec4(0, 0, windowWidth + 1000, 0);
-    walls[1] = vec4(windowWidth, 0, windowWidth, 500);
+    const int size = 5;
+    vec4 walls[size];
+    walls[0] = vec4(0, 0, windowWidth, 0);
+    // walls[1] = vec4(windowWidth, 0, windowWidth, windowHeight);
     walls[2] = vec4(windowWidth, windowHeight, 0, windowHeight);
-    walls[3] = vec4(0, windowHeight, 0, 0);
+    // walls[3] = vec4(0, windowHeight, 0, 0);
 
     vec2 center = vec2(boids[thisBoid].centerX, boids[thisBoid].centerY);
     vec2 frontRay = center + directionVec * RAYCAST_RANGE;
     bool isColliding = false;
-    for (int i = 0; i < 4; i++) {
-        if (intersect(center, frontRay, walls[i].xy, walls[i].zw)) {
+    for (int i = 0; i < size; i++) {
+        if (intersects(center, frontRay, walls[i].xy, walls[i].zw)) {
             isColliding = true;
             break;
         }
@@ -131,15 +135,15 @@ bool raycast(vec2 directionVec, int thisBoid)
 
     vec2 leftRay = frontRay;
     vec2 rightRay = frontRay;
-    for (int raycastAngle = 10; raycastAngle <= 180; raycastAngle += 10) {
+    for (float raycastAngle = 0.0f; raycastAngle <= 180; raycastAngle += 10.0f) {
         rightRay = rotatePointAroundCenter(rightRay, center, raycastAngle);
         leftRay = rotatePointAroundCenter(leftRay, center, raycastAngle * -1);
-        for (int i = 0; i < 4; i++) {
-            if (!intersect(center, leftRay, walls[i].xy, walls[i].zw)) {
+        for (int i = 0; i < size; i++) {
+            if (!intersects(center, leftRay, walls[i].xy, walls[i].zw)) {
                 boids[thisBoid].angleDeg -= ROTATION_SPEED;
                 return true;
             }
-            if (!intersect(center, rightRay, walls[i].xy, walls[i].zw)) {
+           if (!intersects(center, rightRay, walls[i].xy, walls[i].zw)) {
                 boids[thisBoid].angleDeg += ROTATION_SPEED;
                 return true;
             }
