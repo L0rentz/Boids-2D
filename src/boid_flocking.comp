@@ -6,7 +6,7 @@
 #define PI 3.1415926538
 
 #define COHESION 40.0f
-#define ALIGNMENT 30.0f
+#define ALIGNMENT 25.0f
 #define SEPARATION 5.0f
 #define FOV 260
 #define ROTATION_SPEED 4
@@ -115,13 +115,13 @@ vec2 rotatePointAroundCenter(vec2 point, const vec2 center, const float angleDeg
 
 bool raycast(vec2 directionVec, int thisBoid)
 {
-    const int size = 5;
-    const float offset = 500;
+    const int size = 4;
+    const float offset = 0;
     vec4 walls[size];
     walls[0] = vec4(0 - offset, 0, windowWidth + offset, 0);
-    // walls[1] = vec4(windowWidth, 0, windowWidth, windowHeight);
+     walls[1] = vec4(windowWidth, 0, windowWidth, windowHeight);
     walls[2] = vec4(windowWidth + offset, windowHeight, 0 - offset, windowHeight);
-    // walls[3] = vec4(0, windowHeight, 0, 0);
+     walls[3] = vec4(0, windowHeight, 0, 0);
 
     vec2 center = vec2(boids[thisBoid].centerX, boids[thisBoid].centerY);
     vec2 frontRay = center + directionVec * RAYCAST_RANGE;
@@ -136,21 +136,22 @@ bool raycast(vec2 directionVec, int thisBoid)
 
     vec2 leftRay = frontRay;
     vec2 rightRay = frontRay;
-    for (float raycastAngle = 0.0f; raycastAngle <= 180; raycastAngle += 1.0f) {
-        rightRay = rotatePointAroundCenter(rightRay, center, raycastAngle);
-        leftRay = rotatePointAroundCenter(leftRay, center, raycastAngle *= -1);
+    for (float raycastAngle = 10.0f, it = 0.0f; it <= 180.0f; it += 1.0f) {
+        rightRay = rotatePointAroundCenter(rightRay, center, -raycastAngle);
+        leftRay = rotatePointAroundCenter(leftRay, center, -raycastAngle);
         for (int i = 0; i < size; i++) {
-            if (!intersects(center, leftRay, walls[i].xy, walls[i].zw)) {
-                boids[thisBoid].angleDeg -= ROTATION_SPEED;
-                return true;
-            }
             if (!intersects(center, rightRay, walls[i].xy, walls[i].zw)) {
-                boids[thisBoid].angleDeg += ROTATION_SPEED;
+                // boids[thisBoid].angleDeg += ROTATION_SPEED;
+                boids[thisBoid].angleDeg = int(360 + atan(rightRay.x, rightRay.y) * (180 / PI)) % 360;
                 return true;
             }
+            // if (!intersects(center, leftRay, walls[i].xy, walls[i].zw)) {
+            //     boids[thisBoid].angleDeg -= ROTATION_SPEED;
+            //     return true;
+            // }
         }
     }
-    return true;
+    return false;
 }
 
 int mappedRadToDeg(float rad)
@@ -179,11 +180,11 @@ void processRotation(int resultAngle, int thisBoidAngle, int thisBoid)
 int findClosestInRangeAngle(float range, int sepCount, int cohCount, int aliCount, vec2 separationVec, vec2 cohesionVec, vec2 alignementVec)
 {
     if (sepCount != 0 && SEPARATION == range) {
-        return int(360 + atan(separationVec.x, separationVec.y) * (180 / PI)) % 360;
+        return int(360 + atan(separationVec.y, separationVec.x) * (180 / PI)) % 360 + 90;
     } else if (cohCount != 0 && COHESION == range) {
-        return int(360 + atan(cohesionVec.x, cohesionVec.y) * (180 / PI)) % 360;
+        return int(360 + atan(cohesionVec.y, cohesionVec.x) * (180 / PI)) % 360 + 90;
     } else if (aliCount != 0 && ALIGNMENT == range) {
-        return int(360 + atan(alignementVec.x, alignementVec.y) * (180 / PI)) % 360;
+        return int(360 + atan(alignementVec.y, alignementVec.x) * (180 / PI)) % 360 + 90;
     }
     return 0;
 }
@@ -235,32 +236,35 @@ void main()
         }
     }
     if (sepCount != 0) {
-        separationVec.x = (separationVec.x / sepCount - boids[thisBoid].centerX);
-        separationVec.y = (separationVec.y / sepCount - boids[thisBoid].centerY);
-        separationVec.x *= -1;
+        separationVec.x = separationVec.x / sepCount - boids[thisBoid].centerX;
+        separationVec.y = separationVec.y / sepCount - boids[thisBoid].centerY;
+        // separationVec.x *= -1;
     }
     if (cohCount != 0) {
         cohesionVec.x = (cohesionVec.x / cohCount - boids[thisBoid].centerX);
-        cohesionVec.y = (cohesionVec.y / cohCount - boids[thisBoid].centerY);
-        cohesionVec.y *= -1;
+        cohesionVec.y = (cohesionVec.y / cohCount - boids[thisBoid].centerX);
+        // cohesionVec.y *= -1;
     }
     if (aliCount != 0) {
-        alignementVec.x /= aliCount;
-        alignementVec.y /= aliCount;
-        alignementVec.y *= -1;
+        alignementVec.x /= aliCount - boids[thisBoid].centerX;
+        alignementVec.y /= aliCount - boids[thisBoid].centerY;
+        // alignementVec.y *= -1;
     }
 
     vec2 directionVec = getBoidDirection(boids[thisBoid].angleDeg, 1.0f);
-    if (!raycast(directionVec, thisBoid)) {
-        // int resultInDegrees = findClosestInRangeAngle(minRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
-        // if (resultInDegrees == 0)
-        //     resultInDegrees = findClosestInRangeAngle(midRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
-        // if (resultInDegrees == 0)
-        //    resultInDegrees = findClosestInRangeAngle(maxRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
-        // if (resultInDegrees != 0)
-        //     processRotation(resultInDegrees, mappedDegrees(int(boids[thisBoid].angleDeg)), thisBoid);
-    }
-    directionVec = getBoidDirection(boids[thisBoid].angleDeg, 1.0f);
+    // if (!raycast(directionVec, thisBoid)) {
+        int resultInDegrees = findClosestInRangeAngle(minRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+        if (resultInDegrees == 0)
+            resultInDegrees = findClosestInRangeAngle(midRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+        if (resultInDegrees == 0)
+           resultInDegrees = findClosestInRangeAngle(maxRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+        if (resultInDegrees != 0)
+            processRotation(resultInDegrees, mappedDegrees(int(boids[thisBoid].angleDeg)), thisBoid);
+    // }
+    // vec2 frontRay = vec2(boids[thisBoid].centerX + directionVec.x, boids[thisBoid].centerY + directionVec.y);
+    // frontRay = rotatePointAroundCenter(frontRay, vec2(boids[thisBoid].centerX, boids[thisBoid].centerY), 0.0f);
+    // boids[thisBoid].angleDeg = int(360 + atan(directionVec.y, directionVec.x) * 180 / PI) % 360 + 90;
+    // directionVec = getBoidDirection(boids[thisBoid].angleDeg, 1.0f);
     boids[thisBoid].centerX += directionVec.x * SPEED;
     boids[thisBoid].centerY += directionVec.y * SPEED;
     checkBorder(thisBoid);

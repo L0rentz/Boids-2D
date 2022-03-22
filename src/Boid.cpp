@@ -93,7 +93,8 @@ Boid::Boid(const glm::vec2 position, const float screenWidth, const int size, co
         setVerticeModel(center.x + _radius, center.y + _diameter, 10);
     }
 
-    angleDeg = rand() % 360;
+    // angleDeg = rand() % 360;
+    angleDeg = 90;
 
     _screenWidth = screenWidth;
     _gridWidth = static_cast<int>(glm::sqrt(BUCKETS_COUNT));
