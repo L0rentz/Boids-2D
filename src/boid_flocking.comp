@@ -116,10 +116,11 @@ vec2 rotatePointAroundCenter(vec2 point, const vec2 center, const float angleDeg
 bool raycast(vec2 directionVec, int thisBoid)
 {
     const int size = 5;
+    const float offset = 500;
     vec4 walls[size];
-    walls[0] = vec4(0, 0, windowWidth, 0);
+    walls[0] = vec4(0 - offset, 0, windowWidth + offset, 0);
     // walls[1] = vec4(windowWidth, 0, windowWidth, windowHeight);
-    walls[2] = vec4(windowWidth, windowHeight, 0, windowHeight);
+    walls[2] = vec4(windowWidth + offset, windowHeight, 0 - offset, windowHeight);
     // walls[3] = vec4(0, windowHeight, 0, 0);
 
     vec2 center = vec2(boids[thisBoid].centerX, boids[thisBoid].centerY);
@@ -135,15 +136,15 @@ bool raycast(vec2 directionVec, int thisBoid)
 
     vec2 leftRay = frontRay;
     vec2 rightRay = frontRay;
-    for (float raycastAngle = 0.0f; raycastAngle <= 180; raycastAngle += 10.0f) {
+    for (float raycastAngle = 0.0f; raycastAngle <= 180; raycastAngle += 1.0f) {
         rightRay = rotatePointAroundCenter(rightRay, center, raycastAngle);
-        leftRay = rotatePointAroundCenter(leftRay, center, raycastAngle * -1);
+        leftRay = rotatePointAroundCenter(leftRay, center, raycastAngle *= -1);
         for (int i = 0; i < size; i++) {
             if (!intersects(center, leftRay, walls[i].xy, walls[i].zw)) {
                 boids[thisBoid].angleDeg -= ROTATION_SPEED;
                 return true;
             }
-           if (!intersects(center, rightRay, walls[i].xy, walls[i].zw)) {
+            if (!intersects(center, rightRay, walls[i].xy, walls[i].zw)) {
                 boids[thisBoid].angleDeg += ROTATION_SPEED;
                 return true;
             }
@@ -251,13 +252,13 @@ void main()
 
     vec2 directionVec = getBoidDirection(boids[thisBoid].angleDeg, 1.0f);
     if (!raycast(directionVec, thisBoid)) {
-        int resultInDegrees = findClosestInRangeAngle(minRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
-        if (resultInDegrees == 0)
-            resultInDegrees = findClosestInRangeAngle(midRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
-        if (resultInDegrees == 0)
-           resultInDegrees = findClosestInRangeAngle(maxRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
-        if (resultInDegrees != 0)
-            processRotation(resultInDegrees, mappedDegrees(int(boids[thisBoid].angleDeg)), thisBoid);
+        // int resultInDegrees = findClosestInRangeAngle(minRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+        // if (resultInDegrees == 0)
+        //     resultInDegrees = findClosestInRangeAngle(midRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+        // if (resultInDegrees == 0)
+        //    resultInDegrees = findClosestInRangeAngle(maxRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
+        // if (resultInDegrees != 0)
+        //     processRotation(resultInDegrees, mappedDegrees(int(boids[thisBoid].angleDeg)), thisBoid);
     }
     directionVec = getBoidDirection(boids[thisBoid].angleDeg, 1.0f);
     boids[thisBoid].centerX += directionVec.x * SPEED;

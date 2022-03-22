@@ -11,9 +11,9 @@ const unsigned int Boid::_vSize = 15;
 
 float Boid::_vertices[_vSize] = {
     // Positions   // Colors
-     0.0f,  1.0f,  1.0f, 1.0f, 1.0f,
-     1.0f, -1.0f,  1.0f, 1.0f, 1.0f,
-    -1.0f, -1.0f,  1.0f, 1.0f, 1.0f
+     0.0f,  1.0f,  0.5f, 0.8f, 1.0f,
+     1.0f, -1.0f,  0.5f, 0.8f, 1.0f,
+    -1.0f, -1.0f,  0.5f, 0.8f, 1.0f
 };
 
 float Boid::_screenWidth;
