@@ -8,8 +8,7 @@ CXXFLAGS		=	-g3 -Wall -Wextra $(CXXINCLOOP) -O3
 SRCCPP			=	main.cpp \
 					stb_image/stb_image.cpp \
 					src/Core.cpp \
-					src/Boid.cpp \
-					src/Utils.cpp
+					src/Boid.cpp
 
 OBJCPP			=	$(SRCCPP:.cpp=.o)
 

@@ -78,7 +78,7 @@ Boid::Boid()
 {
 }
 
-Boid::Boid(const glm::vec2 position, const float screenWidth, const int size, const int speed, const int rotationSpeed)
+Boid::Boid(const glm::vec2 position, const float screenWidth, const int size)
 {
     _id = _nextID++;
     _radius = size;
@@ -93,8 +93,7 @@ Boid::Boid(const glm::vec2 position, const float screenWidth, const int size, co
         setVerticeModel(center.x + _radius, center.y + _diameter, 10);
     }
 
-    // angleDeg = rand() % 360;
-    angleDeg = 90;
+    angleDeg = rand() % 360;
 
     _screenWidth = screenWidth;
     _gridWidth = static_cast<int>(glm::sqrt(BUCKETS_COUNT));
@@ -129,48 +128,3 @@ double Boid::getAngleDeg() const
 {
     return angleDeg;
 }
-
-// bool Boid::wallAvoidance(sf::Vector2u windowSize, const std::vector<sf::FloatRect *> &obstacles)
-// {
-//     glm::vec2 normalizedDirection = {0, 0};
-
-//     // Check if outside
-//     sf::FloatRect wallRect = {WALLOFFSET, WALLOFFSET, static_cast<float>(windowSize.x - WALLOFFSET * 2), static_cast<float>(windowSize.y - WALLOFFSET * 2)};
-//     if (!wallRect.contains(center.x, center.y)) {
-//         glm::vec2 mapCenter = glm::vec2{static_cast<float>(windowSize.x / 2), static_cast<float>(windowSize.y / 2)};
-//         return processRotation(mapCenter);
-//     }
-
-//     // Check if wall
-//     normalizedDirection = utils.normalizeVector2f(_front, center);
-//     glm::vec2 frontRaycast = glm::vec2{_front.x + normalizedDirection.x * 200, _front.y + normalizedDirection.y * 200};
-//     // _debugPos = frontRaycast;
-//     int isColliding = 0;
-//     for (auto it : obstacles)
-//         isColliding += utils.segmentIntersectsRectangle(*it, center, frontRaycast);
-//     if (isColliding == 0) return false;
-//     glm::vec2 leftRaycast = frontRaycast;
-//     glm::vec2 rightRaycast = frontRaycast;
-//     for (int raycastAngle = 10; isColliding > 0 && raycastAngle <= 180; raycastAngle += 10) {
-//         isColliding = 0;
-//         leftRaycast = utils.rotatePointAroundCenter(leftRaycast, center, raycastAngle);
-//         for (auto it : obstacles)
-//             isColliding += utils.segmentIntersectsRectangle(*it, center, leftRaycast);
-//         if (isColliding == 0) {
-//             _front = utils.rotatePointAroundCenter(_front, center, _rotationSpeed);
-//             angleDeg += _rotationSpeed;
-//             return true;
-//         }
-
-//         isColliding = 0;
-//         rightRaycast = utils.rotatePointAroundCenter(rightRaycast, center, -raycastAngle);
-//         for (auto it : obstacles)
-//             isColliding += utils.segmentIntersectsRectangle(*it, center, rightRaycast);
-//         if (isColliding == 0) {
-//             _front = utils.rotatePointAroundCenter(_front, center, -_rotationSpeed);
-//             angleDeg -= _rotationSpeed;
-//             return true;
-//         }
-//     }
-//     return true;
-// }

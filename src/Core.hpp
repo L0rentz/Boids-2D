@@ -48,7 +48,7 @@ class Core {
         unsigned int _tableSize;
         unsigned int _worldPosScaleAngleDegSize;
         unsigned int _worldPosScaleAngleDegIdx1;
-        unsigned int _worldPosScaleAngleDegIdx2; 
+        unsigned int _worldPosScaleAngleDegIdx2;
         unsigned int _worldPosScaleAngleDegOffset;
         unsigned int _metadataSize;
         unsigned int _bufferSelectorIdx;

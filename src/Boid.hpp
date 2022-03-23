@@ -1,24 +1,19 @@
 #ifndef BOID_HPP_
 #define BOID_HPP_
 
-#include "Utils.hpp"
 #include "glm.hpp"
 #include "gtc/matrix_transform.hpp"
 #include "gtc/type_ptr.hpp"
 
-#include <SFML/Graphics.hpp>
-#include <iostream>
-#include <map>
-
 #define WALLOFFSET -1.0
 
-#define BOIDS_COUNT 30000
+#define BOIDS_COUNT 50000
 #define BUCKETS_COUNT 100 // Change in both GLSL compute shader too !
 
 class Boid {
     public:
         Boid();
-        Boid(const glm::vec2 position, const float screenWidth, const int scale = 20, const int speed = 10, const int rotationSpeed = 5);
+        Boid(const glm::vec2 position, const float screenWidth, const int scale = 20);
         ~Boid();
 
         const glm::vec2 &getWorldPosition() const;
