@@ -268,9 +268,9 @@ void main()
     }
 
     vec2 directionVec = getBoidDirection(boids[thisBoid].angleDeg - 90, 1.0f);
-    // raycast(directionVec, thisBoid);
-    if (!raycast(directionVec, thisBoid)) {
-    // if (true) {
+    raycast(directionVec, thisBoid);
+    // if (!raycast(directionVec, thisBoid)) {
+    if (true) {
         int resultInDegrees = findClosestInRangeAngle(minRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
         if (resultInDegrees == 0)
             resultInDegrees = findClosestInRangeAngle(midRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
