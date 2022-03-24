@@ -1,6 +1,6 @@
 #version 460 core
 
-#define BUCKETS_COUNT 100
+#define BUCKETS_COUNT 400
 #define GRID_WIDTH sqrt(BUCKETS_COUNT)
 
 #define PI 3.1415926538
@@ -133,9 +133,9 @@ void processRotation(int resultAngle, int thisBoidAngle, int thisBoid)
 
 bool raycast(vec2 directionVec, int thisBoid)
 {
-    if (boids[thisBoid].centerX > windowWidth || boids[thisBoid].centerX < 0 || boids[thisBoid].centerY > windowHeight || boids[thisBoid].centerY < 0) {
+    // if (boids[thisBoid].centerX > windowWidth || boids[thisBoid].centerX < 0 || boids[thisBoid].centerY > windowHeight || boids[thisBoid].centerY < 0) {
     // if (boids[thisBoid].centerX > windowWidth / 2 || boids[thisBoid].centerX < windowWidth / 2 || boids[thisBoid].centerY > windowHeight / 2 || boids[thisBoid].centerY < windowHeight / 2 ) {
-    // if (boids[thisBoid].centerY > windowHeight || boids[thisBoid].centerY < 0) {
+    if (boids[thisBoid].centerY > windowHeight || boids[thisBoid].centerY < 0) {
         vec2 mapCenter = vec2(windowWidth / 2, windowHeight / 2);
         int resultInDegrees = mappedDegrees(int(atan(mapCenter.y - boids[thisBoid].centerY, mapCenter.x - boids[thisBoid].centerX) * 180 / PI));
         // processRotation(resultInDegrees, mappedDegrees(int(boids[thisBoid].angleDeg - 90)), thisBoid);
@@ -147,9 +147,9 @@ bool raycast(vec2 directionVec, int thisBoid)
     const float offset = 500;
     vec4 walls[size];
     walls[0] = vec4(0 - offset, 0, windowWidth + offset, 0);
-    walls[1] = vec4(windowWidth, 0 - offset, windowWidth, windowHeight + offset);
+    // walls[1] = vec4(windowWidth, 0 - offset, windowWidth, windowHeight + offset);
     walls[2] = vec4(windowWidth + offset, windowHeight, 0 - offset, windowHeight);
-    walls[3] = vec4(0, windowHeight + offset, 0, 0 - offset);
+    // walls[3] = vec4(0, windowHeight + offset, 0, 0 - offset);
 
     float raycastAngle = 2.0f;
     vec2 center = vec2(boids[thisBoid].centerX, boids[thisBoid].centerY);
@@ -282,5 +282,5 @@ void main()
     directionVec = getBoidDirection(boids[thisBoid].angleDeg - 90, 1.0f);
     boids[thisBoid].centerX += directionVec.x * SPEED;
     boids[thisBoid].centerY += directionVec.y * SPEED;
-    // checkBorder(thisBoid);
+    checkBorder(thisBoid);
 }
