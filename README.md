@@ -1,14 +1,13 @@
 # Boids
+A flocking simulation.
 
 ## Linux
 Use "make" in the terminal to build then execute ./boids
 
 ## Windows
-TODO
+Build using the "cmake" with visual studio compiler and launch the .exe in build/debug.
 
 # Description
 
-Boids simulation with collision detection.
-
-Press left mouse click and drag to start making a wall, release the click to build it.
-Backspace to undo.
+C++/OpenGL/GLSL flocking simulation with instanced rendering, spatial hashing and raycasting.
+Up to 80 000 boids at 30 fps+ on my system (ubuntu 1660ti and i7-9750H).
