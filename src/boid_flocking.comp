@@ -61,14 +61,9 @@ vec2 getBoidDirection(const float angleDeg, const float len) {
     return vec2(len * cos(angleRad), len * sin(angleRad));
 }
 
+// TODO
 // void checkAllNeighbours()
 // {
-//     for (int i = startIdx; i < maxIdx; i++) {
-//         if (i == thisBoid) continue;
-//         if (magnitudeVec2(vec2(boids[i].centerX, boids[i].centerY), vec2(boids[thisBoid].centerX, boids[thisBoid].centerY)) < maxRange) {
-//             boids[i].centerY += 2.0;
-//         }
-//     }
 // }
 
 bool intersects(vec2 A, vec2 B, vec2 C, vec2 D) {
@@ -139,6 +134,7 @@ void processRotation(int resultAngle, int thisBoidAngle, int thisBoid)
 bool raycast(vec2 directionVec, int thisBoid)
 {
     if (boids[thisBoid].centerX > windowWidth || boids[thisBoid].centerX < 0 || boids[thisBoid].centerY > windowHeight || boids[thisBoid].centerY < 0) {
+    // if (boids[thisBoid].centerX > windowWidth / 2 || boids[thisBoid].centerX < windowWidth / 2 || boids[thisBoid].centerY > windowHeight / 2 || boids[thisBoid].centerY < windowHeight / 2 ) {
     // if (boids[thisBoid].centerY > windowHeight || boids[thisBoid].centerY < 0) {
         vec2 mapCenter = vec2(windowWidth / 2, windowHeight / 2);
         int resultInDegrees = mappedDegrees(int(atan(mapCenter.y - boids[thisBoid].centerY, mapCenter.x - boids[thisBoid].centerX) * 180 / PI));
@@ -272,9 +268,9 @@ void main()
     }
 
     vec2 directionVec = getBoidDirection(boids[thisBoid].angleDeg - 90, 1.0f);
-    raycast(directionVec, thisBoid);
-    // if (!raycast(directionVec, thisBoid)) {
-    if (true) {
+    // raycast(directionVec, thisBoid);
+    if (!raycast(directionVec, thisBoid)) {
+    // if (true) {
         int resultInDegrees = findClosestInRangeAngle(minRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
         if (resultInDegrees == 0)
             resultInDegrees = findClosestInRangeAngle(midRange, sepCount, cohCount, aliCount, separationVec, cohesionVec, alignementVec);
